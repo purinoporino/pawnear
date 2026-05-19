@@ -1,0 +1,2384 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PawMap — หาบ้านให้น้อง</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700&family=Fraunces:wght@400;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  /* ── Design System: PawMap Color Palette ── */
+  /* Creamy White #FFFDF7 — Main background */
+  --cream:#FFFDF7;--warm:#FFF5E4;--warm2:#F5E6CC;
+  /* Muted Cocoa #5C4D4A — Primary text & logo */
+  --bark-l:#8A7470;--bark-d:#5C4D4A;--bark-xd:#3A2E2C;
+  /* Mint Green #A8E6CF — Positive, shelter pins, logo accent */
+  --sage:#5DC4A0;--sage-l:#A8E6CF;--sage-bg:#E8F8F2;
+  /* Pastel Yellow #FDE093 — CTA buttons, active nav */
+  --amber:#F5C842;--amber-l:#FDE093;--amber-bg:#FEF9E6;
+  /* Baby Blue #AECBFA — Tags, info, map roads */
+  --sky:#6FA8DC;--sky-bg:#EAF2FF;
+  /* Soft Peach #FFC8C8 — Post button, header accents */
+  --peach:#FFA8A8;--peach-l:#FFC8C8;--peach-bg:#FFF0F0;
+  /* Semantic */
+  --rose:#D94F4F;--rose-bg:#FDEEED;
+  --text:#3A2E2C;--text2:#5C4D4A;--text3:#8A7470;--text4:#B0A09E;
+  --border:rgba(92,77,74,0.14);--border2:rgba(92,77,74,0.07);
+  --card:#FFFDF7;
+  --shadow:0 2px 16px rgba(40,20,5,.07);--shadow-lg:0 8px 40px rgba(40,20,5,.13);
+  --r:12px;--rsm:8px;--rlg:16px;--rpill:100px;
+}
+html,body{height:100%;overflow:hidden;background:var(--cream);color:var(--text);font-family:'Noto Sans Thai',sans-serif;font-size:14px;line-height:1.5}
+.hide{display:none!important}
+/* buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:none;border-radius:var(--rpill);font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:all .18s;padding:9px 18px}
+.btn-dk{background:var(--bark-d);color:#fff}.btn-dk:hover{background:var(--bark-xd);transform:translateY(-1px)}
+.btn-lt{background:var(--warm);color:var(--text2);border:1px solid var(--border)}.btn-lt:hover{background:var(--warm2)}
+.btn-am{background:var(--peach);color:var(--bark-xd)}.btn-am:hover{background:var(--peach-l);transform:translateY(-1px)}
+.btn-sg{background:var(--sage);color:#fff}.btn-sg:hover{background:#3DA882}
+.btn-full{width:100%;border-radius:var(--r)}
+/* tags */
+.tag{display:inline-flex;align-items:center;font-size:11px;font-weight:500;padding:3px 9px;border-radius:var(--rpill)}
+.tg{background:var(--sage-bg);color:#3A6A3D}
+.ta{background:var(--amber-bg);color:#8A5010}
+.tr{background:var(--rose-bg);color:#8A2820}
+.ts{background:var(--sky-bg);color:#1A5A8A}
+/* form */
+input,textarea,select{font-family:inherit;font-size:13px;color:var(--text);outline:none;border:1.5px solid var(--border);border-radius:var(--rsm);padding:9px 12px;background:#fff;transition:border-color .15s;width:100%}
+input:focus,textarea:focus,select:focus{border-color:var(--bark-l)}
+label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;color:var(--text3);display:block;margin-bottom:5px}
+.field{margin-bottom:14px}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.avatar{border-radius:50%;background:var(--warm2);border:2px solid var(--sage-l);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+/* layout */
+#app{height:100%;display:flex;flex-direction:column;overflow:hidden;position:relative}
+.topnav{height:54px;background:var(--card);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;padding:0 18px;flex-shrink:0;z-index:30}
+.logo{font-family:'Fraunces',serif;font-size:20px;font-weight:700;color:var(--bark-d);letter-spacing:-.5px;display:flex;align-items:center;gap:6px;cursor:pointer}
+.npill{padding:6px 14px;border-radius:var(--rpill);font-size:12.5px;font-weight:500;cursor:pointer;transition:all .15s;color:var(--text2);border:none;background:none}
+.npill.on{background:var(--amber-l);color:var(--bark-xd);font-weight:600}
+.npill:hover:not(.on){background:var(--warm)}
+.nav-r{margin-left:auto;display:flex;align-items:center;gap:8px}
+.notif-btn{width:34px;height:34px;border-radius:50%;background:var(--warm);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;position:relative}
+.ndot{position:absolute;top:5px;right:5px;width:7px;height:7px;background:var(--rose);border-radius:50%;border:1.5px solid var(--card)}
+.main{flex:1;overflow:hidden;display:flex}
+.page{display:none;width:100%;height:100%}
+.page.on{display:flex}
+
+/* LOGIN */
+#page-login{align-items:center;justify-content:center;background:var(--cream);overflow:hidden;position:relative}
+.login-blob{position:absolute;border-radius:50%;filter:blur(60px);opacity:.35;pointer-events:none}
+.login-card{background:var(--card);border-radius:24px;border:1px solid var(--border);box-shadow:var(--shadow-lg);padding:36px 40px;width:400px;max-width:95vw;position:relative;z-index:2}
+.ltab{flex:1;text-align:center;padding:8px;border-radius:var(--rsm);cursor:pointer;font-size:13px;font-weight:500;transition:all .18s;color:var(--text2)}
+.ltab.on{background:var(--card);color:var(--bark-d);box-shadow:var(--shadow)}
+
+/* MAP */
+#page-map{flex-direction:row}
+.sidebar{width:330px;flex-shrink:0;background:var(--card);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+.sb-head{padding:12px 14px 10px;border-bottom:1px solid var(--border);flex-shrink:0}
+.search-wrap{display:flex;align-items:center;gap:8px;background:var(--warm);border:1px solid var(--border);border-radius:var(--rsm);padding:7px 11px;margin-bottom:9px}
+.search-wrap input{border:none;background:transparent;padding:0;font-size:13px}
+.fchip{padding:4px 11px;border-radius:var(--rpill);font-size:11.5px;font-weight:500;cursor:pointer;border:1px solid var(--border);background:#fff;color:var(--text2);transition:all .15s}
+.fchip.on{background:var(--bark-d);color:#fff;border-color:var(--bark-d)}
+.sb-count{padding:8px 14px 4px;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--text4);flex-shrink:0}
+.pet-list{overflow-y:auto;flex:1;padding:5px 8px 10px}
+.pet-list::-webkit-scrollbar{width:4px}
+.pet-list::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+.pcard{display:flex;align-items:center;gap:10px;padding:9px;border-radius:var(--r);cursor:pointer;transition:all .15s;border:1.5px solid transparent;margin-bottom:3px}
+.pcard:hover{background:var(--warm)}
+.pcard.on{background:var(--warm);border-color:var(--bark-l)}
+.pthumb{width:58px;height:58px;border-radius:9px;flex-shrink:0;background:var(--warm2);display:flex;align-items:center;justify-content:center;font-size:28px}
+.pinfo{flex:1;min-width:0}
+.pname{font-size:13.5px;font-weight:600}
+.pmeta{font-size:11.5px;color:var(--text3);margin-top:1px}
+.ptags{display:flex;gap:4px;margin-top:5px;flex-wrap:wrap}
+.pdist{font-size:11px;color:var(--text3);margin-top:4px}
+.pscore{flex-shrink:0;width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10.5px;font-weight:700;border:2px solid}
+.sh{border-color:var(--sage);color:var(--sage);background:var(--sage-bg)}
+.sm{border-color:var(--amber);color:var(--amber);background:var(--amber-bg)}
+/* map area */
+.map-area{flex:1;position:relative;overflow:hidden}
+#leafletMap{width:100%;height:100%;position:relative;overflow:hidden;background:#e8f0e4;cursor:grab;user-select:none;touch-action:none}
+.map-over{position:absolute;top:14px;z-index:1000;display:flex;gap:7px}
+.map-over.right{right:14px}
+.spill{background:var(--card);border:1px solid var(--border);border-radius:var(--rpill);padding:6px 12px;font-size:11.5px;font-weight:500;box-shadow:var(--shadow);color:var(--text2);display:flex;align-items:center;gap:5px}
+.sdot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+/* map custom styles */
+.map-tile-layer{position:absolute;top:0;left:0;pointer-events:none;will-change:transform}
+.map-tile{position:absolute;width:256px;height:256px;image-rendering:auto;background:#e8f0e4}
+.pin-layer{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none}
+.vpin{position:absolute;transform:translate(-50%,-100%);cursor:pointer;pointer-events:all;z-index:5;transition:transform .12s}
+.vpin:hover,.vpin.on{transform:translate(-50%,-100%) scale(1.22);z-index:8}
+.vpin-ball{width:36px;height:36px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:2.5px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.28);display:flex;align-items:center;justify-content:center}
+.vpin-em{transform:rotate(45deg);font-size:15px;display:block}
+.vshelter{padding:4px 9px;background:var(--sage);color:#fff;border-radius:8px;font-size:11px;font-weight:700;border:2px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.2);white-space:nowrap;cursor:pointer;pointer-events:all}
+.vpopup{position:absolute;z-index:20;background:#fff;border-radius:12px;padding:12px 14px;min-width:210px;box-shadow:0 8px 28px rgba(40,20,5,.16);border:1px solid var(--border);pointer-events:all;cursor:default}
+.vpopup-close{position:absolute;top:6px;right:8px;background:none;border:none;font-size:14px;cursor:pointer;color:var(--text3)}
+.vheat{position:absolute;border-radius:50%;pointer-events:none;transition:opacity .3s}
+.vzoom{position:absolute;top:14px;left:14px;z-index:15;display:flex;flex-direction:column;gap:4px}
+.vzoom-btn{width:34px;height:34px;background:#fff;border:1px solid var(--border);border-radius:8px;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow);color:var(--text2);line-height:1;user-select:none;font-weight:300}
+.vzoom-btn:hover{background:var(--warm)}
+.ppname{font-weight:700;font-size:15px;margin-bottom:3px}
+.ppmeta{color:var(--text3);font-size:12px}
+.ppbtn{display:inline-block;margin-top:8px;padding:6px 16px;background:var(--bark-d);color:#fff;border-radius:var(--rpill);font-size:12px;font-weight:600;cursor:pointer;border:none;font-family:inherit}
+.pin-wrap{width:36px;height:36px;background:var(--bark-d);border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:2.5px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center}
+.pin-em{transform:rotate(45deg);font-size:15px;display:block;line-height:1}
+.shelter-pin{padding:4px 9px;background:var(--sage);color:#fff;border-radius:var(--rsm);font-size:11px;font-weight:700;border:2px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.2);white-space:nowrap}
+/* detail panel */
+.dp{position:absolute;bottom:0;right:0;width:310px;background:var(--card);border-top-left-radius:var(--rlg);border-left:1px solid var(--border);border-top:1px solid var(--border);transform:translateY(100%);transition:transform .3s cubic-bezier(.34,1.1,.64,1);z-index:1000;max-height:78%;overflow-y:auto;box-shadow:var(--shadow-lg)}
+.dp.open{transform:translateY(0)}
+.dp::-webkit-scrollbar{width:4px}
+.dp::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+.dpimg{width:100%;height:130px;background:var(--warm2);display:flex;align-items:center;justify-content:center;font-size:64px;border-top-left-radius:var(--rlg);position:relative}
+.dpclose{position:absolute;top:9px;right:9px;background:rgba(255,255,255,.85);border:none;width:27px;height:27px;border-radius:50%;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;color:var(--text2)}
+.dpbody{padding:14px 16px 20px}
+.dpname{font-family:'Fraunces',serif;font-size:19px;font-weight:700}
+.dpsub{font-size:12px;color:var(--text3);margin-top:2px}
+.dpstats{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin:12px 0}
+.dpstat{background:var(--warm);border-radius:var(--rsm);padding:9px 11px}
+.dpstat-l{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text4)}
+.dpstat-v{font-size:13.5px;font-weight:600;margin-top:2px}
+.bar-bg{background:var(--warm2);border-radius:8px;height:7px;overflow:hidden}
+.bar-f{height:100%;border-radius:8px;transition:width .6s .1s}
+
+/* CHAT */
+#page-chat{flex-direction:row}
+.chat-sb{width:280px;flex-shrink:0;background:var(--card);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+.csb-head{padding:14px 14px 10px;border-bottom:1px solid var(--border);flex-shrink:0}
+.csb-head h3{font-size:14px;font-weight:700;margin-bottom:8px}
+.thread-list{overflow-y:auto;flex:1}
+.thread{display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer;transition:background .15s;border-bottom:1px solid var(--border2)}
+.thread:hover{background:var(--warm)}.thread.on{background:var(--warm2)}
+.tav{width:42px;height:42px;font-size:20px}
+.tinfo{flex:1;min-width:0}
+.tname{font-size:13px;font-weight:600}
+.tprev{font-size:12px;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
+.ttime{font-size:10.5px;color:var(--text4);flex-shrink:0}
+.ubadge{background:var(--amber);color:#fff;border-radius:var(--rpill);font-size:10px;font-weight:700;padding:1px 6px;margin-left:4px}
+.chat-main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.chat-hdr{height:54px;background:var(--card);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;padding:0 18px;flex-shrink:0}
+.msgs{flex:1;overflow-y:auto;padding:16px 20px;display:flex;flex-direction:column;gap:10px;background:var(--cream)}
+.msgs::-webkit-scrollbar{width:4px}
+.msgs::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+.msg{max-width:68%;display:flex;flex-direction:column}
+.msg.me{align-self:flex-end;align-items:flex-end}
+.msg.them{align-self:flex-start;align-items:flex-start}
+.mbubble{padding:10px 14px;border-radius:14px;font-size:13px;line-height:1.5}
+.msg.me .mbubble{background:var(--bark-d);color:#fff;border-bottom-right-radius:4px}
+.msg.them .mbubble{background:var(--card);border:1px solid var(--border);border-bottom-left-radius:4px}
+.mtime{font-size:10.5px;color:var(--text4);margin-top:3px;padding:0 4px}
+.chat-inp{padding:12px 16px;background:var(--card);border-top:1px solid var(--border);display:flex;gap:8px;align-items:flex-end}
+.chat-inp textarea{resize:none;min-height:38px;max-height:100px;border-radius:var(--rsm);padding:8px 12px}
+.send-btn{width:38px;height:38px;background:var(--bark-d);color:#fff;border:none;border-radius:var(--rsm);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s}
+.send-btn:hover{background:var(--bark-xd)}
+.no-chat{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:var(--text3)}
+
+/* SHELTER */
+#page-shelter{flex-direction:column;overflow:hidden}
+.shelter-wrap{flex:1;overflow-y:auto;padding:20px 24px}
+.shelter-wrap::-webkit-scrollbar{width:6px}
+.shelter-wrap::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+.pg-title{font-family:'Fraunces',serif;font-size:22px;font-weight:700;margin-bottom:4px}
+.pg-sub{font-size:13px;color:var(--text3);margin-bottom:20px}
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:var(--rlg);padding:16px 18px;position:relative;overflow:hidden}
+.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;border-radius:var(--rlg) var(--rlg) 0 0}
+.sc1::before{background:var(--amber)}.sc2::before{background:var(--sage)}
+.sc3::before{background:var(--sky)}.sc4::before{background:var(--rose)}
+.stat-num{font-family:'Fraunces',serif;font-size:28px;font-weight:700;line-height:1}
+.stat-lbl{font-size:12px;color:var(--text3);margin-top:3px}
+.stat-dlt{font-size:11px;margin-top:6px;font-weight:500}
+.dup{color:var(--sage)}.ddn{color:var(--rose)}
+.sec-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.sec-head h3{font-size:15px;font-weight:700}
+.listings-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-bottom:22px}
+.lc{background:var(--card);border:1px solid var(--border);border-radius:var(--rlg);overflow:hidden;transition:box-shadow .15s}
+.lc:hover{box-shadow:var(--shadow-lg)}
+.lc-img{height:100px;background:var(--warm2);display:flex;align-items:center;justify-content:center;font-size:44px;position:relative}
+.lc-st{position:absolute;top:8px;right:8px;font-size:10px;font-weight:600;padding:3px 8px;border-radius:var(--rpill)}
+.sta{background:var(--sage-bg);color:#3A6A3D}.stp{background:var(--amber-bg);color:#8A5010}.std{background:var(--sky-bg);color:#1A5A8A}
+.lc-body{padding:10px 12px}
+.lc-name{font-size:13px;font-weight:600}.lc-meta{font-size:11.5px;color:var(--text3)}
+.lc-foot{display:flex;justify-content:space-between;align-items:center;margin-top:8px}
+.apps-table{background:var(--card);border:1px solid var(--border);border-radius:var(--rlg);overflow:hidden;margin-bottom:22px}
+.at-head{display:grid;grid-template-columns:2fr 2fr 1fr 1.5fr 1.3fr;gap:12px;padding:11px 16px;background:var(--warm);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--text3)}
+.at-row{display:grid;grid-template-columns:2fr 2fr 1fr 1.5fr 1.3fr;gap:12px;padding:12px 16px;border-top:1px solid var(--border2);align-items:center;transition:background .12s}
+.at-row:hover{background:var(--warm)}
+.apcell{display:flex;align-items:center;gap:8px}
+/* chart */
+.chart-box{background:var(--card);border:1px solid var(--border);border-radius:var(--rlg);padding:20px;margin-bottom:22px}
+.chart-legend{display:flex;gap:14px;flex-wrap:wrap}
+.cleg{font-size:12px;display:flex;align-items:center;gap:5px}
+.cleg-dot{width:10px;height:10px;border-radius:50%}
+.ybtn{padding:4px 13px;border-radius:var(--rpill);font-size:12px;font-weight:500;cursor:pointer;font-family:inherit;border:1px solid var(--border);transition:all .15s}
+.ybtn.on{background:var(--bark-d);color:#fff;border-color:var(--bark-d)}
+.bar-chart{display:flex;align-items:flex-end;gap:5px;height:120px;margin-bottom:28px}
+.bgrp{flex:1;display:flex;gap:2px;align-items:flex-end;position:relative}
+.bbar{flex:1;border-radius:3px 3px 0 0;cursor:pointer;transition:opacity .15s;position:relative}
+.bbar:hover{opacity:.7}
+.bbar:hover .btt{display:block}
+.btt{display:none;position:absolute;bottom:105%;left:50%;transform:translateX(-50%);background:var(--bark-d);color:#fff;font-size:10px;padding:3px 7px;border-radius:6px;white-space:nowrap;margin-bottom:2px;pointer-events:none;z-index:10}
+.blbl{position:absolute;bottom:-18px;left:50%;transform:translateX(-50%);font-size:9px;color:var(--text3);white-space:nowrap}
+.chart-sum{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.csum{border-radius:var(--rsm);padding:10px 12px;text-align:center}
+.csum-n{font-family:'Fraunces',serif;font-size:20px;font-weight:700}
+.csum-l{font-size:11px;color:var(--text3);margin-top:2px}
+
+/* ADOPTION */
+#page-adoption{align-items:flex-start;overflow:hidden}
+.adopt-wrap{flex:1;overflow-y:auto;padding:24px 28px;max-width:700px;margin:0 auto;width:100%}
+.adopt-wrap::-webkit-scrollbar{width:6px}
+.adopt-wrap::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+.steps-bar{display:flex;align-items:center;margin-bottom:28px}
+.sc{width:30px;height:30px;border-radius:50%;border:2px solid var(--border);background:var(--card);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--text4);flex-shrink:0;transition:all .25s}
+.sc.done{background:var(--sage);border-color:var(--sage);color:#fff}
+.sc.active{background:var(--bark-d);border-color:var(--bark-d);color:#fff}
+.sline{flex:1;height:2px;background:var(--border);margin:0 4px}
+.sline.done{background:var(--sage)}
+.slbl{font-size:11px;color:var(--text3);margin-left:6px;white-space:nowrap}
+.slbl.active{color:var(--bark-d);font-weight:600}
+.astep{display:none}.astep.on{display:block}
+.adopt-card{background:var(--card);border:1px solid var(--border);border-radius:var(--rlg);padding:20px 22px;margin-bottom:14px}
+.opt-card{border:2px solid var(--border);border-radius:var(--r);padding:12px 14px;cursor:pointer;transition:all .15s;background:var(--card)}
+.opt-card:hover{border-color:var(--bark-l)}
+.opt-card.on{border-color:var(--bark-d);background:var(--warm)}
+.opt-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+.adopt-nav{display:flex;justify-content:space-between;margin-top:20px;gap:10px}
+
+/* QUIZ */
+#page-quiz{align-items:center;justify-content:center;overflow:hidden;background:var(--cream)}
+.quiz-wrap{width:100%;max-width:560px;padding:20px;overflow-y:auto;max-height:100%}
+.qprog{height:5px;background:var(--warm2);border-radius:5px;margin-bottom:22px;overflow:hidden}
+.qprog-f{height:100%;background:linear-gradient(90deg,var(--amber),var(--sage));border-radius:5px;transition:width .4s}
+.qcard{background:var(--card);border:1px solid var(--border);border-radius:var(--rlg);padding:22px;margin-bottom:14px;box-shadow:var(--shadow)}
+.qopt{border:1.5px solid var(--border);border-radius:var(--r);padding:11px 14px;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:10px;font-size:13px}
+.qopt:hover{border-color:var(--bark-l);background:var(--warm)}
+.qopt.on{border-color:var(--bark-d);background:var(--warm2)}
+.match-card{background:var(--card);border:1px solid var(--border);border-radius:var(--rlg);padding:16px;margin-bottom:10px;display:flex;align-items:center;gap:14px;cursor:pointer;transition:all .15s}
+.match-card:hover{box-shadow:var(--shadow-lg)}
+
+/* PROFILE */
+#page-profile{align-items:flex-start;overflow:hidden}
+.profile-wrap{flex:1;overflow-y:auto;padding:24px 28px;max-width:680px;margin:0 auto;width:100%}
+.profile-wrap::-webkit-scrollbar{width:6px}
+.profile-wrap::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+.prf-section{background:var(--card);border:1px solid var(--border);border-radius:var(--rlg);padding:18px 20px;margin-bottom:14px}
+.prf-section h3{font-size:14px;font-weight:700;margin-bottom:14px}
+.prefs-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.pref-item{display:flex;align-items:center;gap:8px;padding:9px 11px;background:var(--warm);border-radius:var(--rsm)}
+.ah-item{display:flex;align-items:center;gap:12px;padding:10px 12px;border:1px solid var(--border);border-radius:var(--r);background:var(--card);margin-bottom:8px}
+
+/* MODAL */
+.modal-bg{position:fixed;inset:0;background:rgba(30,15,5,.5);z-index:8000;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s}
+.modal-bg.open{opacity:1;pointer-events:all}
+.modal{background:var(--card);border-radius:var(--rlg);padding:24px;width:440px;max-width:95vw;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.2);transform:translateY(16px) scale(.97);transition:transform .25s cubic-bezier(.34,1.1,.64,1)}
+.modal-bg.open .modal{transform:none}
+.modal::-webkit-scrollbar{width:4px}
+.modal::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+.modal h3{font-size:16px;font-weight:700;margin-bottom:16px}
+.emoji-row{display:flex;gap:8px;flex-wrap:wrap}
+.eo{width:42px;height:42px;border-radius:var(--rsm);background:var(--warm);border:2px solid transparent;display:flex;align-items:center;justify-content:center;font-size:21px;cursor:pointer;transition:all .15s}
+.eo.on{border-color:var(--bark-d)}
+.modal-actions{display:flex;gap:8px;margin-top:16px}
+.loc-box{background:var(--warm);border-radius:var(--r);padding:13px 14px;margin-bottom:14px}
+
+/* TOAST */
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(70px);background:var(--bark-d);color:#fff;padding:10px 20px;border-radius:var(--rpill);font-size:13px;font-weight:500;z-index:9999;transition:transform .3s;pointer-events:none;white-space:nowrap}
+.toast.show{transform:translateX(-50%) translateY(0)}
+
+/* Toggle */
+.tog{width:40px;height:22px;border-radius:11px;cursor:pointer;position:relative;transition:background .2s;flex-shrink:0}
+.togball{width:18px;height:18px;background:#fff;border-radius:50%;position:absolute;top:2px;transition:left .2s;box-shadow:0 1px 4px rgba(0,0,0,.2)}
+
+/* Health chips */
+.vchip,.hchip{display:inline-flex;align-items:center;padding:5px 11px;border-radius:var(--rpill);font-size:11.5px;font-weight:500;cursor:pointer;border:1.5px solid var(--border);background:var(--card);color:var(--text2);transition:all .15s;user-select:none;-webkit-user-select:none}
+.vchip:hover,.hchip:hover{border-color:var(--bark-l)}
+.vchip.on{background:var(--sky-bg);border-color:var(--sky);color:#1A5A8A}
+.hchip.on{background:var(--sage-bg);border-color:var(--sage);color:#2A6A40}
+
+/* ══ BOTTOM NAV (mobile only) ══ */
+#bottom-nav{display:none;position:fixed;bottom:0;left:0;right:0;height:60px;background:var(--card);border-top:1px solid var(--border);z-index:200;padding:0 4px;padding-bottom:env(safe-area-inset-bottom,0px)}
+.bnav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;padding:6px 2px;border:none;background:none;color:var(--text3);font-family:inherit;font-size:10px;font-weight:500;transition:all .15s;min-width:0;-webkit-tap-highlight-color:transparent}
+.bnav-item.on{color:var(--bark-d)}
+.bnav-item.on svg{stroke:var(--bark-d)}
+.bnav-dot{width:4px;height:4px;border-radius:50%;background:var(--bark-d);display:none;margin-top:-2px}
+.bnav-item.on .bnav-dot{display:block}
+
+/* ══ RESPONSIVE ══ */
+@media(max-width:768px){
+  body{padding-bottom:60px}
+  html,body{-webkit-overflow-scrolling:touch}
+
+  /* Top nav */
+  .topnav{padding:0 12px;height:52px;gap:8px}
+  .topnav>div:nth-child(2){display:none!important}
+  .logo{font-size:17px}
+  .nav-r{gap:6px}
+
+  /* Bottom nav */
+  #bottom-nav{display:flex!important}
+
+  /* Login */
+  .login-card{border-radius:var(--rlg)!important;padding:28px 22px!important;width:calc(100vw - 32px)!important;max-height:92vh;overflow-y:auto}
+
+  /* MAP: stack sidebar above map */
+  #page-map{flex-direction:column!important}
+  .sidebar{width:100%!important;height:auto;flex-shrink:0;max-height:45vmax;border-right:none!important;border-bottom:1px solid var(--border);overflow:hidden}
+  .sb-head{padding:10px 12px 8px}
+  .map-area{flex:1;min-height:180px}
+
+  /* Detail panel slides up full-width */
+  .dp{width:100%!important;border-radius:var(--rlg) var(--rlg) 0 0!important;border-left:none!important;border-top:1px solid var(--border)!important;max-height:88%!important}
+  .dpimg{border-radius:var(--rlg) var(--rlg) 0 0!important}
+
+  /* Map overlays */
+  .map-over{top:8px!important;left:8px!important}
+  .map-over.right{top:8px!important;right:8px!important;left:auto!important}
+  .map-over .spill{font-size:10.5px;padding:5px 9px}
+
+  /* CHAT: hide sidebar when chat open */
+  #page-chat{flex-direction:column!important}
+  .chat-sb{width:100%!important;max-height:38vmax;border-right:none!important;border-bottom:1px solid var(--border)}
+  .chat-sb.hidden{display:none!important}
+  .chat-main{flex:1;min-height:0}
+  .msgs{padding:12px 14px}
+  .chat-inp{padding:10px 12px}
+
+  /* Back button for chat */
+  .chat-back{display:flex!important}
+
+  /* MODALS: bottom sheet */
+  .modal-bg{align-items:flex-end!important}
+  .modal{width:100%!important;max-width:100%!important;border-radius:var(--rlg) var(--rlg) 0 0!important;margin:0!important;max-height:94vh!important;overflow-y:auto}
+
+  /* SHELTER */
+  .shelter-wrap{padding:14px 14px!important}
+  .stats-grid{grid-template-columns:1fr 1fr!important;gap:10px!important}
+  .listing-card,.lc{min-width:0}
+  .listings-grid{grid-template-columns:1fr 1fr!important}
+  .at-head{display:none!important}
+  .at-row{display:flex!important;flex-wrap:wrap;gap:6px!important;padding:10px 12px!important}
+  .at-row>.apcell{font-size:13px;flex:0 0 100%}
+  .at-row>div:not(.apcell){font-size:12px}
+  .chart-box{padding:14px 12px!important}
+  .bar-chart{height:90px!important;gap:3px!important}
+
+  /* ADOPTION */
+  .adopt-wrap{padding:14px 14px!important}
+  .steps-bar{overflow-x:auto;padding-bottom:4px}
+  .slbl{display:none}
+  .sc{width:28px;height:28px;font-size:11px}
+  .opt-grid{grid-template-columns:1fr 1fr!important}
+  .field-row{grid-template-columns:1fr!important}
+  .adopt-nav{flex-direction:column-reverse;gap:8px}
+  .adopt-nav button{width:100%!important}
+
+  /* QUIZ */
+  .quiz-wrap{padding:16px 14px}
+
+  /* PROFILE */
+  .profile-wrap{padding:14px 14px!important}
+  .prefs-grid{grid-template-columns:1fr!important}
+  .profile-hero{flex-wrap:wrap;gap:12px}
+
+  /* PRICING */
+  #pricingModal .modal>div[style*="grid"]{display:flex!important;flex-direction:column!important;gap:10px!important}
+
+  /* MYPOSTS */
+  #page-myposts .pg-title,.pg-title{font-size:18px}
+  #page-myposts>div{padding:14px 14px!important}
+
+  /* STATS */
+  #page-stats>div{padding:14px 14px!important}
+  #page-stats div[style*="grid-template-columns:repeat(3"]{display:grid!important;grid-template-columns:1fr!important}
+
+  /* Misc */
+  .chart-sum{grid-template-columns:1fr!important}
+  .chart-legend{gap:8px}
+}
+
+@media(max-width:480px){
+  .login-card{border-radius:0!important;width:100vw!important;min-height:100dvh;padding-top:env(safe-area-inset-top,20px)!important}
+  #page-login{align-items:flex-start!important;justify-content:flex-start!important}
+  .stats-grid{grid-template-columns:1fr 1fr!important}
+  .topnav{height:50px}
+  .logo{font-size:16px}
+  .bnav-item{font-size:9px}
+}
+</style>
+</head>
+<body>
+<nav id="bottom-nav" aria-label="เมนูหลัก" style="display:none">
+  <!-- Personal tabs, Shelter tabs injected by updateNavForRole -->
+  <button class="bnav-item on" id="bnav-map" onclick="goPage('map')">
+    <svg class="bnav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
+    แผนที่<div class="bnav-dot"></div>
+  </button>
+  <button class="bnav-item" id="bnav-chat" onclick="goPage('chat')">
+    <svg class="bnav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+    แชท<div class="bnav-dot"></div>
+  </button>
+  <!-- Personal -->
+  <button class="bnav-item" id="bnav-myposts" onclick="goPage('myposts')" style="display:none">
+    <svg class="bnav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5H9a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2v-4"/><path d="M18 2l4 4-9 9H9v-4z"/></svg>
+    โพสต์<div class="bnav-dot"></div>
+  </button>
+  <button class="bnav-item" id="bnav-saved" onclick="goPage('saved')" style="display:none">
+    <svg class="bnav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+    บันทึก<div class="bnav-dot"></div>
+  </button>
+  <button class="bnav-item" id="bnav-quiz" onclick="goPage('quiz')" style="display:none">
+    <svg class="bnav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    หาคู่<div class="bnav-dot"></div>
+  </button>
+  <!-- Shelter -->
+  <button class="bnav-item" id="bnav-shelter" onclick="goPage('shelter')" style="display:none">
+    <svg class="bnav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg>
+    Shelter<div class="bnav-dot"></div>
+  </button>
+  <button class="bnav-item" id="bnav-adoption" onclick="goPage('adoption')" style="display:none">
+    <svg class="bnav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    โพสต์<div class="bnav-dot"></div>
+  </button>
+  <button class="bnav-item" id="bnav-stats" onclick="goPage('stats')" style="display:none">
+    <svg class="bnav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+    สถิติ<div class="bnav-dot"></div>
+  </button>
+  <!-- Profile (always shown) -->
+  <button class="bnav-item" id="bnav-profile" onclick="goPage('profile')">
+    <svg class="bnav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+    โปรไฟล์<div class="bnav-dot"></div>
+  </button>
+</nav>
+
+<div id="app">
+
+
+<nav class="topnav" id="topnav" style="display:none">
+  <div class="logo" onclick="goPage('map')">PawMap</div>
+  <div style="display:flex;gap:3px;margin-left:6px">
+    <button class="npill on" data-p="map" onclick="goPage('map')">แผนที่</button>
+    <button class="npill" data-p="chat" onclick="goPage('chat')">แชท</button>
+    <!-- Personal nav -->
+    <button class="npill" id="nav-myposts" data-p="myposts" onclick="goPage('myposts')" style="display:none">โพสต์ของฉัน</button>
+    <button class="npill" id="nav-saved" data-p="saved" onclick="goPage('saved')" style="display:none">บันทึกไว้</button>
+    <button class="npill" id="nav-quiz" data-p="quiz" onclick="goPage('quiz')" style="display:none">หาคู่</button>
+    <!-- Shelter nav -->
+    <button class="npill" id="nav-shelter" data-p="shelter" onclick="goPage('shelter')" style="display:none">จัดการ Shelter</button>
+    <button class="npill" id="nav-adoption" data-p="adoption" onclick="goPage('adoption')" style="display:none">โพสต์หาบ้าน</button>
+    <button class="npill" id="nav-stats" data-p="stats" onclick="goPage('stats')" style="display:none">สถิติ</button>
+  </div>
+  <div class="nav-r">
+    <div class="notif-btn" onclick="showToast('มีคนขอรับเลี้ยง: มะม่วง')">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+      <span class="ndot"></span>
+    </div>
+    <button class="btn btn-am" onclick="openPostModal()">+ โพสต์</button>
+    <div class="avatar" style="width:34px;height:34px;cursor:pointer" onclick="goPage('profile')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg></div>
+  </div>
+</nav>
+
+<div class="main">
+
+<!-- LOGIN -->
+<div class="page on" id="page-login">
+  <div class="login-blob" style="width:400px;height:300px;top:-80px;right:-100px;background:radial-gradient(circle,#f5b87640,transparent 70%)"></div>
+  <div class="login-blob" style="width:300px;height:250px;bottom:-50px;left:-60px;background:radial-gradient(circle,#a8c5ac40,transparent 70%)"></div>
+  <div class="login-card">
+    <div style="text-align:center;margin-bottom:6px">
+      <div class="logo" style="justify-content:center;font-size:26px">PawMap</div>
+    </div>
+    <p style="text-align:center;font-size:13px;color:var(--text3);margin-bottom:28px;font-style:italic">แพลตฟอร์มหาบ้านให้น้องสัตว์เลี้ยง</p>
+    <div style="display:flex;background:var(--warm);border-radius:var(--r);padding:3px;gap:3px;margin-bottom:22px">
+      <div class="ltab on" id="ltab-login" onclick="setLoginTab('login')">เข้าสู่ระบบ</div>
+      <div class="ltab" id="ltab-register" onclick="setLoginTab('register')">สมัครสมาชิก</div>
+    </div>
+    <div id="lf-login">
+      <div class="field"><label>อีเมล</label><input type="email" placeholder="email@example.com"></div>
+      <div class="field"><label>รหัสผ่าน</label><input type="password" placeholder="••••••••"></div>
+      <a href="#" style="font-size:12px;color:var(--bark-l);display:block;text-align:right;margin-top:-8px;margin-bottom:14px">ลืมรหัสผ่าน?</a>
+      <button class="btn btn-dk btn-full" onclick="doLogin()" style="margin-bottom:8px">เข้าสู่ระบบ →</button>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px">
+        <button onclick="demoLogin('personal')" style="padding:7px;border:1.5px dashed var(--border);background:transparent;border-radius:var(--r);font-size:11px;cursor:pointer;color:var(--text3);font-family:inherit">ทดลอง: บุคคลทั่วไป</button>
+        <button onclick="demoLogin('org')" style="padding:7px;border:1.5px dashed var(--border);background:transparent;border-radius:var(--r);font-size:11px;cursor:pointer;color:var(--text3);font-family:inherit">ทดลอง: องค์กร/Shelter</button>
+      </div>
+    </div>
+    <div id="lf-register" class="hide">
+      <!-- Role selector -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px">
+        <div id="role-personal" onclick="selectRole('personal')" style="border:2px solid var(--bark-d);border-radius:var(--r);padding:12px;text-align:center;cursor:pointer;background:var(--warm)">
+          <div style="font-size:22px;margin-bottom:4px"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg></div>
+          <div style="font-size:13px;font-weight:600">บุคคลทั่วไป</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:2px">ผู้รับเลี้ยง / โพสต์</div>
+        </div>
+        <div id="role-org" onclick="selectRole('org')" style="border:2px solid var(--border);border-radius:var(--r);padding:12px;text-align:center;cursor:pointer;background:var(--card)">
+          <div style="font-size:22px;margin-bottom:4px"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="14" y2="14"/></svg></div>
+          <div style="font-size:13px;font-weight:600">องค์กร / Shelter</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:2px">NGO / ศูนย์พักพิง</div>
+        </div>
+      </div>
+      <!-- Personal fields -->
+      <div id="reg-personal-fields">
+        <div class="field"><label>ชื่อ-นามสกุล</label><input id="reg-name" placeholder="ชื่อจริง-นามสกุลจริง"></div>
+        <div class="field"><label>อีเมล</label><input type="email" id="reg-email" placeholder="email@example.com"></div>
+        <div class="field"><label>รหัสผ่าน</label><input type="password" id="reg-pass" placeholder="อย่างน้อย 8 ตัวอักษร"></div>
+        <div class="field"><label>เบอร์โทรศัพท์</label><input type="tel" id="reg-phone" placeholder="08x-xxx-xxxx"></div>
+      </div>
+      <!-- Org extra fields -->
+      <div id="reg-org-fields" class="hide">
+        <div class="field"><label>ชื่อองค์กร / Shelter</label><input placeholder="ชื่อที่จะแสดงบนแพลตฟอร์ม"></div>
+        <div class="field"><label>ชื่อผู้ติดต่อ</label><input placeholder="ชื่อ-นามสกุลผู้ดูแล"></div>
+        <div class="field"><label>อีเมลองค์กร</label><input type="email" placeholder="shelter@example.com"></div>
+        <div class="field"><label>เบอร์โทรศัพท์</label><input type="tel" placeholder="02-xxx-xxxx"></div>
+        <div class="field"><label>เลขทะเบียนองค์กร (ถ้ามี)</label><input placeholder="เช่น เลขนิติบุคคล 13 หลัก"></div>
+        <!-- Document upload for org verification -->
+        <div class="field">
+          <label>เอกสารยืนยันตัวตน / ใบอนุญาตสถานสงเคราะห์</label>
+          <div style="border:2px dashed var(--border);border-radius:var(--rsm);padding:14px;text-align:center;cursor:pointer;background:var(--warm);transition:border-color .15s" onclick="showToast('เลือกไฟล์ PDF หรือรูปภาพ')" onmouseenter="this.style.borderColor='var(--bark-l)'" onmouseleave="this.style.borderColor='var(--border)'">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="margin-bottom:6px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17,8 12,3 7,8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            <div style="font-size:12px;color:var(--text3)">อัปโหลด PDF หรือรูปภาพ</div>
+            <div style="font-size:11px;color:var(--text4);margin-top:2px">เช่น หนังสือรับรองนิติบุคคล, ใบอนุญาตเปิดสถานสงเคราะห์สัตว์</div>
+          </div>
+        </div>
+        <!-- Pending notice -->
+        <div style="background:var(--amber-bg);border:1px solid var(--amber-l);border-radius:var(--rsm);padding:10px 12px;margin-bottom:14px;font-size:12px;color:var(--text2);line-height:1.7">
+          <div style="font-weight:600;margin-bottom:3px">หลังสมัคร: รอ Admin อนุมัติ</div>
+          <div>บัญชีองค์กรจะอยู่ในสถานะ <strong>Pending</strong> จนกว่า Admin จะตรวจสอบเอกสาร (1-3 วันทำการ) — ป้องกันมิจฉาชีพสวมรอยเป็น Shelter</div>
+        </div>
+        <!-- Org pricing choice -->
+        <div style="background:var(--warm);border-radius:var(--r);padding:12px 14px;margin-bottom:14px">
+          <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:10px">เลือกแผนการใช้งาน</div>
+          <div style="display:flex;flex-direction:column;gap:7px">
+            <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;text-transform:none;letter-spacing:0;font-size:13px;color:var(--text);font-weight:400">
+              <input type="radio" name="orgplan" value="free" checked style="width:auto;margin-top:3px"> 
+              <div><div style="font-weight:600">ฟรี — 3 โพสต์/เดือน</div><div style="font-size:11px;color:var(--text3)">เหมาะกับกลุ่มเล็ก ไม่มีค่าใช้จ่าย</div></div>
+            </label>
+            <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;text-transform:none;letter-spacing:0;font-size:13px;color:var(--text);font-weight:400">
+              <input type="radio" name="orgplan" value="basic" style="width:auto;margin-top:3px">
+              <div><div style="font-weight:600">Basic — 199 บาท/เดือน</div><div style="font-size:11px;color:var(--text3)">โพสต์ไม่จำกัด + รูปสูงสุด 5 รูป/โพสต์ + badge ยืนยัน</div></div>
+            </label>
+            <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;text-transform:none;letter-spacing:0;font-size:13px;color:var(--text);font-weight:400">
+              <input type="radio" name="orgplan" value="pro" style="width:auto;margin-top:3px">
+              <div><div style="font-weight:600">Pro — 499 บาท/เดือน</div><div style="font-size:11px;color:var(--text3)">ทุกอย่างใน Basic + analytics + feature บนแผนที่ + 2 boost/เดือน</div></div>
+            </label>
+          </div>
+          <div style="margin-top:10px;font-size:11px;color:var(--text3)">ทดลองใช้ฟรี 30 วัน — ยกเลิกได้ทุกเมื่อ ไม่มีสัญญาผูกมัด</div>
+        </div>
+      </div>
+      <!-- Conditions summary -->
+      <div style="background:var(--warm);border-radius:var(--r);padding:11px 13px;margin-bottom:12px;font-size:12px;color:var(--text2);line-height:1.7">
+        <div style="font-weight:600;margin-bottom:6px">เงื่อนไขการใช้งาน (สรุป)</div>
+        <div>• ห้ามโพสต์เพื่อซื้อขายสัตว์ — แพลตฟอร์มนี้ใช้เพื่อการรับเลี้ยงเท่านั้น</div>
+        <div>• ต้องให้ข้อมูลที่ถูกต้องและเป็นความจริง</div>
+        <div>• 1 เบอร์โทร = 1 บัญชีเท่านั้น</div>
+        <div>• ผู้รับเลี้ยงมีสิทธิ์รับไม่เกิน 3 ตัว/ปี</div>
+        <div>• Admin มีสิทธิ์ระงับบัญชีที่ฝ่าฝืน</div>
+      </div>
+      <!-- Terms checkbox -->
+      <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;margin-bottom:14px;text-transform:none;letter-spacing:0;font-size:12px;color:var(--text2);font-weight:400">
+        <input type="checkbox" id="reg-terms" style="width:auto;margin-top:2px;flex-shrink:0">
+        <span>ฉันอ่านและยอมรับ <span onclick="openTerms(event)" style="color:var(--sky);text-decoration:underline;cursor:pointer">ข้อกำหนดและเงื่อนไขการใช้งาน</span> และ <span onclick="openTerms(event)" style="color:var(--sky);text-decoration:underline;cursor:pointer">นโยบายความเป็นส่วนตัว</span></span>
+      </label>
+      <button class="btn btn-dk btn-full" onclick="doRegister()">สมัครสมาชิก →</button>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;margin:18px 0;color:var(--text4);font-size:12px">
+      <div style="flex:1;height:1px;background:var(--border)"></div>หรือ<div style="flex:1;height:1px;background:var(--border)"></div>
+    </div>
+    <button style="width:100%;padding:10px;border:1.5px solid var(--border);border-radius:var(--r);background:var(--card);font-family:inherit;font-size:13px;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;color:var(--text2)"><svg width="15" height="15" viewBox="0 0 24 24" aria-hidden="true"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>ดำเนินการต่อด้วย Google</button>
+  </div>
+</div>
+
+<!-- MAP -->
+<div class="page" id="page-map">
+  <div class="sidebar">
+    <div class="sb-head">
+      <div class="search-wrap">
+        <span style="font-size:14px;color:var(--text3)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg></span>
+        <input placeholder="ค้นหาชื่อ สายพันธุ์ เขต..." id="srch" oninput="filterPets()">
+      </div>
+      <div style="display:flex;gap:5px;flex-wrap:wrap">
+        <span class="fchip on" onclick="setFilter(this,'all')">ทั้งหมด</span>
+        <span class="fchip" onclick="setFilter(this,'cat')">แมว</span>
+        <span class="fchip" onclick="setFilter(this,'dog')">หมา</span>
+        <span class="fchip" onclick="setFilter(this,'rabbit')">กระต่าย</span>
+        <span class="fchip" onclick="setFilter(this,'vax')">ฉีดยาแล้ว</span>
+      </div>
+    </div>
+    <div class="sb-count" id="sbCount">8 ตัว · กรุงเทพฯ</div>
+    <div class="pet-list" id="petList"></div>
+  </div>
+  <div class="map-area">
+    <div id="leafletMap">
+      <div class="vzoom">
+        <button class="vzoom-btn" onclick="mapZoom(1)" title="ซูมเข้า">+</button>
+        <button class="vzoom-btn" onclick="mapZoom(-1)" title="ซูมออก">−</button>
+        <button class="vzoom-btn" onclick="mapLocate()" title="ตำแหน่งของฉัน" style="font-size:14px">◎</button>
+      </div>
+    </div>
+    <div class="map-over" style="left:58px">
+      <button id="heatBtn" onclick="toggleHeat()" style="background:var(--amber);color:#fff;border:none;border-radius:var(--rpill);padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;box-shadow:var(--shadow)">Heatmap</button>
+    </div>
+    <div class="map-over right">
+      <div class="spill"><span class="sdot" style="background:var(--amber)"></span><span id="mapCnt">8 ตัวหาบ้าน</span></div>
+      <div class="spill"><span class="sdot" style="background:var(--sage)"></span>4 shelter</div>
+    </div>
+    <div class="dp" id="dp">
+      <div class="dpimg"><button class="dpclose" onclick="closeDP()">✕</button><span id="dpEm"></span></div>
+      <div class="dpbody">
+        <div class="dpname" id="dpName">—</div>
+        <div class="dpsub" id="dpSub">—</div>
+        <div style="display:flex;gap:5px;flex-wrap:wrap;margin:9px 0" id="dpTags"></div>
+        <div class="dpstats">
+          <div class="dpstat"><div class="dpstat-l">อายุ</div><div class="dpstat-v" id="dpAge">—</div></div>
+          <div class="dpstat"><div class="dpstat-l">เพศ</div><div class="dpstat-v" id="dpGender">—</div></div>
+          <div class="dpstat"><div class="dpstat-l">สายพันธุ์</div><div class="dpstat-v" id="dpBreed">—</div></div>
+          <div class="dpstat"><div class="dpstat-l">พื้นที่</div><div class="dpstat-v" id="dpArea">—</div></div>
+        </div>
+        <div style="margin:10px 0">
+          <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text2);margin-bottom:4px"><span>ความเข้ากัน</span><span id="dpScore" style="font-weight:700">—</span></div>
+          <div class="bar-bg"><div class="bar-f" id="dpBar" style="width:0;background:var(--sage)"></div></div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:14px">
+          <button class="btn btn-dk" style="flex:2" onclick="goAdoptFlow()">ขอรับเลี้ยง →</button>
+          <button class="btn btn-lt" onclick="goChat()">แชท</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CHAT -->
+<div class="page" id="page-chat">
+  <div class="chat-sb">
+    <div class="csb-head">
+      <h3>ข้อความ</h3>
+      <div class="search-wrap"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg><input placeholder="ค้นหา..."></div>
+    </div>
+    <div class="thread-list" id="threadList"></div>
+  </div>
+  <div class="chat-main">
+    <div class="no-chat" id="noChatMsg"><div style="font-size:36px;color:var(--text3)">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+    </div><p style="font-size:13px">เลือกการสนทนาเพื่อเริ่มแชท</p></div>
+    <div class="hide" id="chatWin" style="flex:1;display:flex;flex-direction:column;overflow:hidden">
+      <div class="chat-hdr">
+        <button id="chat-back-btn" class="chat-back" onclick="mobileChatBack()" style="display:none;background:none;border:none;cursor:pointer;padding:4px;color:var(--text2);flex-shrink:0;margin-right:4px">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-label="กลับ"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+        <div class="avatar" id="chatAv" style="width:38px;height:38px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg></div>
+        <div style="flex:1"><div style="font-size:14px;font-weight:600" id="chatTitle">—</div><div style="font-size:11.5px;color:var(--text3)" id="chatSub">—</div></div>
+        <button class="btn btn-lt" style="font-size:12px;padding:6px 12px" onclick="goAdoptFlow()">ขอรับเลี้ยง</button>
+      </div>
+      <div class="msgs" id="msgs"></div>
+      <div class="chat-inp">
+        <textarea id="msgIn" placeholder="พิมพ์ข้อความ..." rows="1" onkeydown="chatKey(event)"></textarea>
+        <button class="send-btn" onclick="sendMsg()">➤</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SHELTER -->
+<div class="page" id="page-shelter">
+  <div class="shelter-wrap">
+    <div class="pg-title">Shelter Dashboard</div>
+    <div class="pg-sub">Happy Paws Rescue · กรุงเทพมหานคร</div>
+    <div class="stats-grid">
+      <div class="stat-card sc1"><div class="stat-num">24</div><div class="stat-lbl">สัตว์ในดูแล</div><div class="stat-dlt dup">↑ +3 เดือนนี้</div></div>
+      <div class="stat-card sc2"><div class="stat-num">12</div><div class="stat-lbl">รับเลี้ยงสำเร็จ</div><div class="stat-dlt dup">↑ +2 เดือนนี้</div></div>
+      <div class="stat-card sc3"><div class="stat-num">8</div><div class="stat-lbl">คำขอรอพิจารณา</div><div class="stat-dlt ddn">↓ 3 ค้างนาน</div></div>
+      <div class="stat-card sc4"><div class="stat-num">4</div><div class="stat-lbl">ต้องการ Foster</div><div class="stat-dlt" style="color:var(--text3)">— เร่งด่วน</div></div>
+    </div>
+    <div class="sec-head"><h3>รายชื่อสัตว์</h3><button class="btn btn-am" style="font-size:12px;padding:7px 14px" onclick="openPostModal()">+ เพิ่มสัตว์</button></div>
+    <div class="listings-grid" id="shelterListings"></div>
+    <div class="sec-head"><h3>คำขอรับเลี้ยง</h3></div>
+    <div class="apps-table">
+      <div class="at-head"><span>ผู้สมัคร</span><span>สัตว์</span><span>คะแนน</span><span>วันที่สมัคร</span><span>การดำเนินการ</span></div>
+      <div id="appRows"></div>
+    </div>
+    <div class="sec-head"><h3>สถิติรายเดือน</h3></div>
+    <div class="chart-box">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+        <div class="chart-legend">
+          <div class="cleg"><div class="cleg-dot" style="background:var(--sage-l)"></div>รับเลี้ยงสำเร็จ</div>
+          <div class="cleg"><div class="cleg-dot" style="background:var(--amber-l)"></div>เข้ารับดูแลใหม่</div>
+        </div>
+        <div style="display:flex;gap:6px" id="yearTabs"></div>
+      </div>
+      <div class="bar-chart" id="barChart"></div>
+      <div class="chart-sum" id="chartSum"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ADOPTION -->
+<div class="page" id="page-adoption">
+  <div class="adopt-wrap">
+    <div class="pg-title">ขอรับเลี้ยง</div>
+    <div class="pg-sub" style="margin-bottom:20px">กรอกข้อมูลเพื่อยื่นคำขอ</div>
+    <div class="steps-bar" id="stepsBar">
+      <div class="sc active" id="sc0">1</div><span class="slbl active" id="sl0">เลือกสัตว์</span>
+      <div class="sline" id="ln0"></div>
+      <div class="sc" id="sc1">2</div><span class="slbl" id="sl1">ข้อมูลคุณ</span>
+      <div class="sline" id="ln1"></div>
+      <div class="sc" id="sc2">3</div><span class="slbl" id="sl2">แบบสอบถาม</span>
+      <div class="sline" id="ln2"></div>
+      <div class="sc" id="sc3">4</div><span class="slbl" id="sl3">ยืนยัน</span>
+    </div>
+    <!-- step 0 -->
+    <div class="astep on" id="as0">
+      <div class="adopt-card">
+        <div style="font-size:15px;font-weight:700;margin-bottom:14px">เลือกสัตว์ที่ต้องการรับเลี้ยง</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px" id="adoptGrid"></div>
+      </div>
+      <div class="adopt-nav"><div></div><button class="btn btn-dk" onclick="adoptNext()">ถัดไป →</button></div>
+    </div>
+    <!-- step 1 -->
+    <div class="astep" id="as1">
+      <div class="adopt-card">
+        <div style="font-size:15px;font-weight:700;margin-bottom:14px">ข้อมูลของคุณ</div>
+        <div class="field"><label>ชื่อ-นามสกุล</label><input value="สมชาย ใจดี"></div>
+        <div class="field"><label>เบอร์โทร</label><input value="089-123-4567"></div>
+        <div class="field"><label>ที่อยู่</label><input placeholder="บ้านเลขที่ ซอย ถนน"></div>
+        <div class="field-row">
+          <div class="field"><label>จังหวัด</label>
+            <select onchange="adoptDistChange(this)">
+              <option>กรุงเทพมหานคร</option><option>เชียงใหม่</option><option>ภูเก็ต</option><option>นนทบุรี</option>
+            </select>
+          </div>
+          <div class="field"><label>เขต/อำเภอ</label>
+            <select><option>วัฒนา</option><option>คลองเตย</option><option>บางรัก</option><option>ห้วยขวาง</option></select>
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field"><label>แขวง/ตำบล</label><input placeholder="แขวง"></div>
+          <div class="field"><label>รหัสไปรษณีย์</label><input placeholder="10110"></div>
+        </div>
+        <div class="field"><label>ประเภทที่พัก</label>
+          <select><option>อพาร์ทเมนต์/คอนโด</option><option>บ้านมีสวน</option><option>บ้านเดี่ยว</option><option>ทาวน์เฮาส์</option></select>
+        </div>
+      </div>
+      <div class="adopt-nav">
+        <button class="btn btn-lt" onclick="adoptBack()">← ย้อนกลับ</button>
+        <button class="btn btn-dk" onclick="adoptNext()">ถัดไป →</button>
+      </div>
+    </div>
+    <!-- step 2 -->
+    <div class="astep" id="as2">
+      <div class="adopt-card">
+        <div style="font-size:15px;font-weight:700;margin-bottom:14px">แบบสอบถาม</div>
+        <div class="field" style="margin-bottom:16px">
+          <label>ประสบการณ์เลี้ยงสัตว์?</label>
+          <div class="opt-grid">
+            <div class="opt-card on" onclick="selOpt(this)"><div style="font-size:22px;margin-bottom:5px">✅</div><div style="font-size:13px;font-weight:600">มีประสบการณ์</div></div>
+            <div class="opt-card" onclick="selOpt(this)"><div style="font-size:22px;margin-bottom:5px">🌱</div><div style="font-size:13px;font-weight:600">มือใหม่</div></div>
+          </div>
+        </div>
+        <div class="field" style="margin-bottom:16px">
+          <label>เวลากับสัตว์เลี้ยงต่อวัน</label>
+          <div class="opt-grid">
+            <div class="opt-card" onclick="selOpt(this)"><div style="font-size:22px;margin-bottom:4px">⏱</div><div style="font-size:12px;font-weight:600">1-2 ชั่วโมง</div></div>
+            <div class="opt-card on" onclick="selOpt(this)"><div style="font-size:22px;margin-bottom:4px">⏰</div><div style="font-size:12px;font-weight:600">3-5 ชั่วโมง</div></div>
+            <div class="opt-card" onclick="selOpt(this)"><div style="font-size:22px;margin-bottom:4px">🏠</div><div style="font-size:12px;font-weight:600">อยู่บ้านมาก</div></div>
+            <div class="opt-card" onclick="selOpt(this)"><div style="font-size:22px;margin-bottom:4px">🌙</div><div style="font-size:12px;font-weight:600">แค่ช่วงเย็น</div></div>
+          </div>
+        </div>
+        <div class="field">
+          <label>เหตุผลที่ต้องการรับเลี้ยง</label>
+          <textarea rows="3" placeholder="บอกเล่าความตั้งใจ...">อยากมีเพื่อนในบ้าน พร้อมดูแลอย่างเต็มที่</textarea>
+        </div>
+      </div>
+      <div class="adopt-nav">
+        <button class="btn btn-lt" onclick="adoptBack()">← ย้อนกลับ</button>
+        <button class="btn btn-dk" onclick="adoptNext()">ถัดไป →</button>
+      </div>
+    </div>
+    <!-- step 3 -->
+    <div class="astep" id="as3">
+      <div class="adopt-card">
+        <div style="font-size:15px;font-weight:700;margin-bottom:14px">ยืนยันคำขอ</div>
+        <div id="confirmBanner" style="display:flex;align-items:center;gap:16px;padding:16px;background:var(--warm);border-radius:var(--r);margin-bottom:16px">
+          <span style="font-size:50px">🐱</span>
+          <div><div style="font-size:16px;font-weight:700">มะม่วง</div><div style="font-size:12px;color:var(--text3)">เปอร์เซีย · 8 เดือน</div></div>
+        </div>
+        <div style="font-size:13px;line-height:1.9;background:var(--warm);border-radius:var(--r);padding:14px;color:var(--text2)">
+          หลังส่งคำขอ shelter จะติดต่อกลับภายใน <strong>2-3 วันทำการ</strong><br>
+          อาจได้รับการนัดหมายเยี่ยมชม<br>
+          ถ้าผ่านการพิจารณา จะมีการทำสัญญารับเลี้ยง
+        </div>
+      </div>
+      <div class="adopt-nav">
+        <button class="btn btn-lt" onclick="adoptBack()">← ย้อนกลับ</button>
+        <button class="btn btn-sg" onclick="submitAdopt()">ส่งคำขอ</button>
+      </div>
+    </div>
+    <!-- step 4 success -->
+    <div class="astep" id="as4">
+      <div class="adopt-card" style="text-align:center;padding:36px 20px">
+        <div style="font-size:56px;margin-bottom:12px;line-height:1" aria-hidden="true">🎉</div>
+        <div style="font-family:'Fraunces',serif;font-size:22px;font-weight:700;margin-bottom:8px">ส่งคำขอสำเร็จ!</div>
+        <div style="font-size:13px;color:var(--text3);margin-bottom:20px">Shelter จะติดต่อกลับภายใน 2-3 วันทำการ</div>
+        <div style="display:flex;gap:10px;justify-content:center">
+          <button class="btn btn-dk" onclick="goPage('map')">กลับแผนที่</button>
+          <button class="btn btn-lt" onclick="goPage('chat')">แชท Shelter</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- QUIZ -->
+<div class="page" id="page-quiz">
+  <div class="quiz-wrap">
+    <div style="text-align:center;margin-bottom:24px">
+      <div class="logo" style="justify-content:center;margin-bottom:8px;font-size:22px">PawMap</div>
+      <div style="font-family:'Fraunces',serif;font-size:21px;font-weight:700;margin-bottom:4px">หาน้องที่ใช่สำหรับคุณ</div>
+      <div style="font-size:13px;color:var(--text3)">ตอบ 5 คำถาม เพื่อแนะนำสัตว์ที่เหมาะกับไลฟ์สไตล์ของคุณ</div>
+    </div>
+    <div class="qprog"><div class="qprog-f" id="quizBar" style="width:20%"></div></div>
+    <div id="quizBody"></div>
+    <div id="quizResults" class="hide">
+      <div class="adopt-card" style="text-align:center;padding:20px;margin-bottom:14px">
+        <div style="font-size:36px;margin-bottom:8px" aria-hidden="true">✨</div>
+        <div style="font-family:'Fraunces',serif;font-size:18px;font-weight:700;margin-bottom:4px">น้องที่เหมาะกับคุณ</div>
+        <div style="font-size:13px;color:var(--text3)">คำนวณจากไลฟ์สไตล์ของคุณ</div>
+      </div>
+      <div id="matchList"></div>
+      <div style="text-align:center;margin-top:12px">
+        <button class="btn btn-dk" onclick="goPage('map')">ดูบนแผนที่ →</button>
+        <button class="btn btn-lt" style="margin-left:8px" onclick="resetQuiz()">ทำใหม่</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PROFILE -->
+<div class="page" id="page-profile">
+  <div class="profile-wrap">
+    <div class="prf-section" style="display:flex;align-items:center;gap:18px">
+      <div class="avatar" style="width:70px;height:70px"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg></div>
+      <div style="flex:1">
+        <div style="font-family:'Fraunces',serif;font-size:20px;font-weight:700">สมชาย ใจดี</div>
+        <div style="font-size:12px;color:var(--text3);margin-top:2px">Adopter · กรุงเทพมหานคร</div>
+        <div style="display:flex;gap:20px;margin-top:10px">
+          <div style="text-align:center"><div style="font-size:17px;font-weight:700">3</div><div style="font-size:11px;color:var(--text3)">รับเลี้ยงแล้ว</div></div>
+          <div style="text-align:center"><div style="font-size:17px;font-weight:700">12</div><div style="font-size:11px;color:var(--text3)">ถูกใจ</div></div>
+          <div style="text-align:center"><div style="font-size:17px;font-weight:700">5</div><div style="font-size:11px;color:var(--text3)">รีวิว</div></div>
+        </div>
+      </div>
+      <button class="btn btn-lt" style="font-size:12px;padding:7px 14px">แก้ไข</button>
+    </div>
+    <div class="prf-section">
+      <h3>ค่าความชอบ</h3>
+      <div class="prefs-grid">
+        <div class="pref-item"><span style="display:flex;align-items:center;color:var(--text3)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg></span><div><div style="font-size:11px;color:var(--text3)">ที่พักอาศัย</div><div style="font-size:13px;font-weight:500;margin-top:1px">คอนโด/อพาร์ทเมนต์</div></div></div>
+        <div class="pref-item"><span style="display:flex;align-items:center;color:var(--text3)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg></span><div><div style="font-size:11px;color:var(--text3)">เวลาว่าง</div><div style="font-size:13px;font-weight:500;margin-top:1px">3-5 ชั่วโมง/วัน</div></div></div>
+        <div class="pref-item"><span style="display:flex;align-items:center;color:var(--text3)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg></span><div><div style="font-size:11px;color:var(--text3)">มีเด็กในบ้าน</div><div style="font-size:13px;font-weight:500;margin-top:1px">ไม่มี</div></div></div>
+        <div class="pref-item"><span style="display:flex;align-items:center;color:var(--text3)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></span><div><div style="font-size:11px;color:var(--text3)">พื้นที่</div><div style="font-size:13px;font-weight:500;margin-top:1px">วัฒนา, กรุงเทพฯ</div></div></div>
+      </div>
+    </div>
+    <div class="prf-section">
+      <h3>ประวัติการรับเลี้ยง</h3>
+      <div class="ah-item"><span style="font-size:28px">🐱</span><div style="flex:1"><div style="font-size:13px;font-weight:600">มะลิ — Siamese</div><div style="font-size:11.5px;color:var(--text3)">รับเลี้ยง 12 ม.ค. 2567 · Happy Paws · วัฒนา, กทม.</div></div><span class="tag tg">สำเร็จ</span></div>
+      <div class="ah-item"><span style="font-size:28px">🐶</span><div style="flex:1"><div style="font-size:13px;font-weight:600">บ๊อบ — Mix</div><div style="font-size:11.5px;color:var(--text3)">รับเลี้ยง 3 มี.ค. 2566 · Rescue BKK · ห้วยขวาง, กทม.</div></div><span class="tag tg">สำเร็จ</span></div>
+      <div class="ah-item"><span style="font-size:28px">🐱</span><div style="flex:1"><div style="font-size:13px;font-weight:600">ส้ม — Orange Tabby</div><div style="font-size:11.5px;color:var(--text3)">ยื่นคำขอ 28 เม.ย. 2568 · Happy Paws · บางรัก, กทม.</div></div><span class="tag ta">รอพิจารณา</span></div>
+    </div>
+    <div class="prf-section">
+      <h3>การแจ้งเตือน</h3>
+      <div id="notifList"></div>
+    </div>
+    <div style="display:flex;gap:10px;margin-bottom:30px">
+      <button class="btn btn-lt" style="flex:1" onclick="goPage('quiz')">Compatibility Quiz</button>
+      <button class="btn btn-lt" style="flex:1" onclick="showToast('ออกจากระบบแล้ว')">ออกจากระบบ</button>
+    </div>
+  </div>
+</div>
+
+<!-- MYPOSTS: Personal P2P flow -->
+<div class="page" id="page-myposts">
+  <div style="flex:1;overflow-y:auto;padding:20px 24px;max-width:860px;margin:0 auto;width:100%">
+
+    <!-- Header -->
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px">
+      <div>
+        <div style="font-family:'Fraunces',serif;font-size:22px;font-weight:700;margin-bottom:3px">โพสต์ของฉัน</div>
+        <div style="font-size:13px;color:var(--text3)">สัตว์เลี้ยงที่คุณโพสต์หาบ้าน — บุคคลต่อบุคคล</div>
+      </div>
+      <button class="btn btn-am" onclick="openPostModal()">+ โพสต์สัตว์ใหม่</button>
+    </div>
+
+    <!-- P2P Explainer -->
+    <div style="background:var(--sage-bg);border:1px solid var(--sage-l);border-radius:var(--r);padding:14px 16px;margin-bottom:20px;display:flex;gap:14px;align-items:flex-start">
+      <div style="flex-shrink:0;width:36px;height:36px;background:var(--sage);border-radius:50%;display:flex;align-items:center;justify-content:center">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 8v4m0 4h.01"/></svg>
+      </div>
+      <div>
+        <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px">Personal-to-Personal (P2P)</div>
+        <div style="font-size:12px;color:var(--text2);line-height:1.7">คุณโพสต์สัตว์เลี้ยงที่หาบ้านให้ได้โดยตรง — ผู้สนใจจะส่งคำขอมาหาคุณ คุณเป็นคนพิจารณาและตัดสินใจเองโดยไม่ผ่าน shelter <br>โพสต์ฟรีไม่จำกัด · สัตว์ทุกตัวต้องผ่าน auto-check ก่อนแสดงบนแผนที่</div>
+      </div>
+    </div>
+
+    <!-- Stats row -->
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px">
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--rlg);padding:14px 16px">
+        <div style="font-size:22px;font-weight:700;font-family:'Fraunces',serif">2</div>
+        <div style="font-size:12px;color:var(--text3);margin-top:2px">โพสต์ active</div>
+      </div>
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--rlg);padding:14px 16px">
+        <div style="font-size:22px;font-weight:700;font-family:'Fraunces',serif;color:var(--amber)">5</div>
+        <div style="font-size:12px;color:var(--text3);margin-top:2px">คำขอรอตรวจ</div>
+      </div>
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--rlg);padding:14px 16px">
+        <div style="font-size:22px;font-weight:700;font-family:'Fraunces',serif;color:var(--sage)">3</div>
+        <div style="font-size:12px;color:var(--text3);margin-top:2px">รับเลี้ยงสำเร็จ</div>
+      </div>
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--rlg);padding:14px 16px">
+        <div style="font-size:22px;font-weight:700;font-family:'Fraunces',serif">127</div>
+        <div style="font-size:12px;color:var(--text3);margin-top:2px">ยอดเข้าชม</div>
+      </div>
+    </div>
+
+    <!-- My listings -->
+    <div style="font-size:14px;font-weight:700;margin-bottom:12px">สัตว์ที่กำลังหาบ้าน</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:24px">
+
+      <!-- Listing card 1 -->
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--rlg);overflow:hidden">
+        <div style="height:90px;background:var(--warm2);display:flex;align-items:center;justify-content:center;font-size:48px;position:relative">
+          🐱
+          <span class="tag tg" style="position:absolute;top:8px;right:8px;font-size:10px">Active</span>
+        </div>
+        <div style="padding:12px 14px">
+          <div style="font-size:14px;font-weight:600">มะม่วง</div>
+          <div style="font-size:12px;color:var(--text3);margin-top:2px">เปอร์เซีย · 8 เดือน · ตัวเมีย</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:3px">วัฒนา, กรุงเทพฯ</div>
+          <div style="display:flex;gap:5px;margin-top:8px;flex-wrap:wrap">
+            <span class="tag tg" style="font-size:10px">ฉีดยาแล้ว</span>
+            <span class="tag tg" style="font-size:10px">ตอนแล้ว</span>
+          </div>
+          <!-- Requests -->
+          <div style="margin-top:10px;padding:8px 10px;background:var(--amber-bg);border-radius:var(--rsm);font-size:12px;color:var(--text2)">
+            <div style="font-weight:600;margin-bottom:4px">3 คำขอรอตรวจ</div>
+            <div id="mp-req-list-1" style="display:flex;flex-direction:column;gap:5px">
+              <div onclick="openReqDetail('สมชาย ใจดี','92','วัฒนา','อพาร์ทเมนต์','มีประสบการณ์')" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:5px 8px;background:var(--card);border-radius:var(--rsm);border:1px solid var(--border)">
+                <div><div style="font-size:12px;font-weight:500">สมชาย ใจดี</div><div style="font-size:10px;color:var(--text3)">Risk: ต่ำ · Score 92%</div></div>
+                <span class="tag tg" style="font-size:10px">ดูคำขอ</span>
+              </div>
+              <div onclick="openReqDetail('มาลี รักสัตว์','78','ปทุมวัน','บ้าน','มือใหม่')" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:5px 8px;background:var(--card);border-radius:var(--rsm);border:1px solid var(--border)">
+                <div><div style="font-size:12px;font-weight:500">มาลี รักสัตว์</div><div style="font-size:10px;color:var(--text3)">Risk: กลาง · Score 78%</div></div>
+                <span class="tag ta" style="font-size:10px">ดูคำขอ</span>
+              </div>
+              <div onclick="openReqDetail('ธนา เพื่อนสัตว์','65','ลาดพร้าว','อพาร์ทเมนต์','มือใหม่')" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:5px 8px;background:var(--card);border-radius:var(--rsm);border:1px solid var(--border)">
+                <div><div style="font-size:12px;font-weight:500">ธนา เพื่อนสัตว์</div><div style="font-size:10px;color:var(--text3)">Risk: กลาง · Score 65%</div></div>
+                <span class="tag ta" style="font-size:10px">ดูคำขอ</span>
+              </div>
+            </div>
+          </div>
+          <div style="display:flex;gap:6px;margin-top:10px">
+            <button class="btn btn-lt" style="flex:1;font-size:11px;padding:6px 8px" onclick="showToast('แก้ไขโพสต์')">แก้ไข</button>
+            <button class="btn btn-lt" style="flex:1;font-size:11px;padding:6px 8px" onclick="showToast('ปิดโพสต์แล้ว')">ปิดโพสต์</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Listing card 2 -->
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--rlg);overflow:hidden">
+        <div style="height:90px;background:var(--warm2);display:flex;align-items:center;justify-content:center;font-size:48px;position:relative">
+          🐶
+          <span class="tag tg" style="position:absolute;top:8px;right:8px;font-size:10px">Active</span>
+        </div>
+        <div style="padding:12px 14px">
+          <div style="font-size:14px;font-weight:600">บัดดี้</div>
+          <div style="font-size:12px;color:var(--text3);margin-top:2px">Mixed · 2 ปี · ตัวผู้</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:3px">จตุจักร, กรุงเทพฯ</div>
+          <div style="display:flex;gap:5px;margin-top:8px;flex-wrap:wrap">
+            <span class="tag tg" style="font-size:10px">ฉีดยาแล้ว</span>
+            <span class="tag ts" style="font-size:10px">ชอบวิ่ง</span>
+          </div>
+          <div style="margin-top:10px;padding:8px 10px;background:var(--sage-bg);border-radius:var(--rsm);font-size:12px;color:var(--text2)">
+            <div style="font-weight:600;margin-bottom:4px">2 คำขอรอตรวจ</div>
+            <div style="display:flex;flex-direction:column;gap:5px">
+              <div onclick="openReqDetail('นิดา วิ่งเล่น','88','สาทร','บ้านมีสวน','มีประสบการณ์')" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:5px 8px;background:var(--card);border-radius:var(--rsm);border:1px solid var(--border)">
+                <div><div style="font-size:12px;font-weight:500">นิดา วิ่งเล่น</div><div style="font-size:10px;color:var(--text3)">Risk: ต่ำ · Score 88%</div></div>
+                <span class="tag tg" style="font-size:10px">ดูคำขอ</span>
+              </div>
+              <div onclick="openReqDetail('ก้อง สนามกีฬา','72','มีนบุรี','บ้าน','มีประสบการณ์')" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:5px 8px;background:var(--card);border-radius:var(--rsm);border:1px solid var(--border)">
+                <div><div style="font-size:12px;font-weight:500">ก้อง สนามกีฬา</div><div style="font-size:10px;color:var(--text3)">Risk: กลาง · Score 72%</div></div>
+                <span class="tag ta" style="font-size:10px">ดูคำขอ</span>
+              </div>
+            </div>
+          </div>
+          <div style="display:flex;gap:6px;margin-top:10px">
+            <button class="btn btn-lt" style="flex:1;font-size:11px;padding:6px 8px" onclick="showToast('แก้ไขโพสต์')">แก้ไข</button>
+            <button class="btn btn-lt" style="flex:1;font-size:11px;padding:6px 8px" onclick="showToast('ปิดโพสต์แล้ว')">ปิดโพสต์</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- P2P How it works -->
+    <div style="font-size:14px;font-weight:700;margin-bottom:12px">วิธีทำงานของ P2P</div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px">
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:14px 12px;text-align:center">
+        <div style="width:32px;height:32px;border-radius:50%;background:var(--warm2);display:flex;align-items:center;justify-content:center;margin:0 auto 8px">
+          <span style="font-size:13px;font-weight:700;color:var(--text2)">1</span>
+        </div>
+        <div style="font-size:12px;font-weight:600;margin-bottom:3px">โพสต์สัตว์</div>
+        <div style="font-size:11px;color:var(--text3)">กรอกข้อมูลสัตว์ + ที่อยู่ → แสดงบนแผนที่</div>
+      </div>
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:14px 12px;text-align:center">
+        <div style="width:32px;height:32px;border-radius:50%;background:var(--warm2);display:flex;align-items:center;justify-content:center;margin:0 auto 8px">
+          <span style="font-size:13px;font-weight:700;color:var(--text2)">2</span>
+        </div>
+        <div style="font-size:12px;font-weight:600;margin-bottom:3px">รับคำขอ</div>
+        <div style="font-size:11px;color:var(--text3)">ระบบกรองอัตโนมัติ ส่งเฉพาะคำขอที่ผ่าน check</div>
+      </div>
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:14px 12px;text-align:center">
+        <div style="width:32px;height:32px;border-radius:50%;background:var(--warm2);display:flex;align-items:center;justify-content:center;margin:0 auto 8px">
+          <span style="font-size:13px;font-weight:700;color:var(--text2)">3</span>
+        </div>
+        <div style="font-size:12px;font-weight:600;margin-bottom:3px">แชท + ตัดสินใจ</div>
+        <div style="font-size:11px;color:var(--text3)">คุยกันผ่านแชทในแอป นัดพบแบบ public</div>
+      </div>
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:14px 12px;text-align:center">
+        <div style="width:32px;height:32px;border-radius:50%;background:var(--sage-bg);display:flex;align-items:center;justify-content:center;margin:0 auto 8px">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--sage)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        <div style="font-size:12px;font-weight:600;margin-bottom:3px">ยืนยันรับเลี้ยง</div>
+        <div style="font-size:11px;color:var(--text3)">กด confirm ทั้งสองฝ่าย → บันทึกประวัติ</div>
+      </div>
+    </div>
+
+    <!-- Safety tips for P2P -->
+    <div style="background:var(--rose-bg);border:1px solid #f0b8b5;border-radius:var(--r);padding:12px 14px">
+      <div style="font-size:12px;font-weight:600;color:var(--rose);margin-bottom:6px">ข้อควรระวัง P2P</div>
+      <div style="font-size:12px;color:var(--text2);line-height:1.8">
+        <div>· นัดพบในที่สาธารณะเสมอ — ห้ามให้ที่อยู่บ้านก่อนได้รู้จักกันพอสมควร</div>
+        <div>· ตรวจสอบ Risk Score และประวัติผู้ขอก่อนตัดสินใจ</div>
+        <div>· แชทผ่านระบบในแอปเท่านั้น ไม่แชร์เบอร์ส่วนตัวก่อน</div>
+        <div>· ถ้าพบพฤติกรรมน่าสงสัย กด "รายงาน" ได้เลย</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SAVED PETS PAGE -->
+<div class="page" id="page-saved">
+  <div style="flex:1;overflow-y:auto;padding:24px 28px;max-width:700px;margin:0 auto;width:100%">
+    <div style="font-family:'Fraunces',serif;font-size:22px;font-weight:700;margin-bottom:4px">บันทึกไว้</div>
+    <div style="font-size:13px;color:var(--text3);margin-bottom:20px">สัตว์ที่คุณกดหัวใจไว้</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px">
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--rlg);overflow:hidden;cursor:pointer" onclick="goPage('map')">
+        <div style="height:90px;background:var(--warm2);display:flex;align-items:center;justify-content:center;font-size:44px">🐱</div>
+        <div style="padding:10px 12px"><div style="font-size:13px;font-weight:600">มิ้ง</div><div style="font-size:11.5px;color:var(--text3)">Siamese · 4 ปี</div><div style="font-size:11px;color:var(--text3);margin-top:3px">คลองเตย, กทม.</div>
+        <div style="display:flex;gap:4px;margin-top:7px"><span class="tag tg" style="font-size:10px">ฉีดยาแล้ว</span><span class="tag tg" style="font-size:10px">ตอนแล้ว</span></div>
+        <button class="btn btn-dk" style="width:100%;margin-top:10px;font-size:12px;padding:7px" onclick="goAdoptFlow()">ขอรับเลี้ยง</button></div>
+      </div>
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--rlg);overflow:hidden;cursor:pointer" onclick="goPage('map')">
+        <div style="height:90px;background:var(--warm2);display:flex;align-items:center;justify-content:center;font-size:44px">🐶</div>
+        <div style="padding:10px 12px"><div style="font-size:13px;font-weight:600">ดาว</div><div style="font-size:11.5px;color:var(--text3)">Shih Tzu · 5 ปี</div><div style="font-size:11px;color:var(--text3);margin-top:3px">ปทุมวัน, กทม.</div>
+        <div style="display:flex;gap:4px;margin-top:7px"><span class="tag tg" style="font-size:10px">ฉีดยาแล้ว</span><span class="tag ts" style="font-size:10px">เข้ากับแมว</span></div>
+        <button class="btn btn-dk" style="width:100%;margin-top:10px;font-size:12px;padding:7px" onclick="goAdoptFlow()">ขอรับเลี้ยง</button></div>
+      </div>
+      <div style="border:2px dashed var(--border);border-radius:var(--rlg);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;gap:8px;color:var(--text3);cursor:pointer;min-height:200px" onclick="goPage('map')">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+        <div style="font-size:12px">เรียกดูสัตว์เพิ่มเติม</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- STATS PAGE (Shelter only) -->
+<div class="page" id="page-stats">
+  <div style="flex:1;overflow-y:auto;padding:24px 28px;max-width:860px;margin:0 auto;width:100%">
+    <div style="font-family:'Fraunces',serif;font-size:22px;font-weight:700;margin-bottom:4px">สถิติ Shelter</div>
+    <div style="font-size:13px;color:var(--text3);margin-bottom:20px">Happy Paws Rescue · ข้อมูลเชิงลึก</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:22px">
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--rlg);padding:18px;position:relative;overflow:hidden"><div style="position:absolute;top:0;left:0;right:0;height:3px;background:var(--sage)"></div><div style="font-size:26px;font-weight:700;font-family:'Fraunces',serif;color:var(--sage)">127</div><div style="font-size:12px;color:var(--text3);margin-top:3px">ยอดเข้าชมโพสต์ (เดือนนี้)</div><div style="font-size:11px;color:var(--sage);margin-top:5px;font-weight:500">↑ +18% จากเดือนก่อน</div></div>
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--rlg);padding:18px;position:relative;overflow:hidden"><div style="position:absolute;top:0;left:0;right:0;height:3px;background:var(--amber)"></div><div style="font-size:26px;font-weight:700;font-family:'Fraunces',serif;color:var(--bark-d)">43</div><div style="font-size:12px;color:var(--text3);margin-top:3px">คนกดบันทึกโพสต์</div><div style="font-size:11px;color:var(--sage);margin-top:5px;font-weight:500">↑ +7 จากเดือนก่อน</div></div>
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--rlg);padding:18px;position:relative;overflow:hidden"><div style="position:absolute;top:0;left:0;right:0;height:3px;background:var(--sky)"></div><div style="font-size:26px;font-weight:700;font-family:'Fraunces',serif;color:var(--sky)">28</div><div style="font-size:12px;color:var(--text3);margin-top:3px">ทักแชทใหม่</div><div style="font-size:11px;color:var(--rose);margin-top:5px;font-weight:500">↓ -3 จากเดือนก่อน</div></div>
+    </div>
+    <!-- Funnel -->
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--rlg);padding:18px 20px;margin-bottom:16px">
+      <div style="font-size:14px;font-weight:700;margin-bottom:14px">Adoption Funnel</div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="display:flex;align-items:center;gap:12px"><div style="font-size:12px;color:var(--text2);min-width:120px">เข้าชมโพสต์</div><div style="flex:1;background:var(--warm2);border-radius:4px;height:20px;overflow:hidden"><div style="width:100%;height:100%;background:var(--sage-l);border-radius:4px"></div></div><span style="font-size:12px;font-weight:600;min-width:30px;text-align:right">127</span></div>
+        <div style="display:flex;align-items:center;gap:12px"><div style="font-size:12px;color:var(--text2);min-width:120px">กดบันทึก</div><div style="flex:1;background:var(--warm2);border-radius:4px;height:20px;overflow:hidden"><div style="width:34%;height:100%;background:var(--amber-l);border-radius:4px"></div></div><span style="font-size:12px;font-weight:600;min-width:30px;text-align:right">43</span></div>
+        <div style="display:flex;align-items:center;gap:12px"><div style="font-size:12px;color:var(--text2);min-width:120px">ทักแชท</div><div style="flex:1;background:var(--warm2);border-radius:4px;height:20px;overflow:hidden"><div style="width:22%;height:100%;background:var(--sky);border-radius:4px"></div></div><span style="font-size:12px;font-weight:600;min-width:30px;text-align:right">28</span></div>
+        <div style="display:flex;align-items:center;gap:12px"><div style="font-size:12px;color:var(--text2);min-width:120px">ยื่นคำขอ</div><div style="flex:1;background:var(--warm2);border-radius:4px;height:20px;overflow:hidden"><div style="width:13%;height:100%;background:var(--peach);border-radius:4px"></div></div><span style="font-size:12px;font-weight:600;min-width:30px;text-align:right">17</span></div>
+        <div style="display:flex;align-items:center;gap:12px"><div style="font-size:12px;color:var(--text2);min-width:120px">รับเลี้ยงสำเร็จ</div><div style="flex:1;background:var(--warm2);border-radius:4px;height:20px;overflow:hidden"><div style="width:9%;height:100%;background:var(--sage);border-radius:4px"></div></div><span style="font-size:12px;font-weight:600;min-width:30px;text-align:right;color:var(--sage)">12</span></div>
+      </div>
+    </div>
+    <!-- Push notification info (Pro only) -->
+    <div style="background:var(--amber-bg);border:1px solid var(--amber-l);border-radius:var(--r);padding:13px 15px;display:flex;gap:12px;align-items:flex-start">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--bark-d)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0;margin-top:1px"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+      <div><div style="font-size:13px;font-weight:600;color:var(--bark-d);margin-bottom:3px">Push Notification (Pro)</div><div style="font-size:12px;color:var(--text2)">แจ้งเตือนผู้ใช้ในรัศมี 10 กม. อัตโนมัติเมื่อมีโพสต์ใหม่ — อัปเกรดเป็น Pro เพื่อเปิดใช้งาน</div><button onclick="openPricing()" style="margin-top:8px;padding:5px 14px;border:none;background:var(--amber);color:var(--bark-xd);border-radius:var(--rpill);font-size:11px;font-weight:600;cursor:pointer;font-family:inherit">ดูแผนราคา</button></div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /main -->
+</div><!-- /app -->
+
+<!-- POST MODAL -->
+<div class="modal-bg" id="postModal" onclick="if(event.target===this)closePostModal()">
+  <div class="modal">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <h3 style="margin:0">โพสต์สัตว์หาบ้าน</h3>
+      <!-- Shelter quota badge injected by JS -->
+      <span id="pm-quota-badge"></span>
+    </div>
+    <div class="field"><label>ชื่อสัตว์</label><input placeholder="เช่น มะม่วง, ส้ม..." id="pmName"></div>
+    <div class="field">
+      <label>ประเภท</label>
+      <div class="emoji-row" id="pm-type-row">
+        <div class="eo on" data-e="🐱" data-sp="cat" onclick="pickE(this)">🐱</div>
+        <div class="eo" data-e="🐶" data-sp="dog" onclick="pickE(this)">🐶</div>
+        <div class="eo" data-e="🐰" data-sp="rabbit" onclick="pickE(this)">🐰</div>
+        <div class="eo" data-e="🐹" data-sp="hamster" onclick="pickE(this)">🐹</div>
+        <div class="eo" data-e="🐦" data-sp="bird" onclick="pickE(this)">🐦</div>
+        <div class="eo" data-e="🐠" data-sp="fish" onclick="pickE(this)">🐠</div>
+      </div>
+    </div>
+    <!-- Breed: changes based on species -->
+    <div class="field">
+      <label>สายพันธุ์</label>
+      <div id="pm-breed-wrap">
+        <select id="pmBreed" onchange="pmBreedChange()" style="margin-bottom:6px">
+          <option value="">-- เลือกสายพันธุ์ --</option>
+        </select>
+        <input id="pmBreedOther" placeholder="ระบุสายพันธุ์..." class="hide" style="margin-top:0">
+      </div>
+    </div>
+    <!-- Age: number + unit -->
+    <div class="field-row">
+      <div class="field">
+        <label>อายุ</label>
+        <div style="display:flex;gap:6px">
+          <input type="number" id="pmAgeNum" placeholder="เช่น 6" min="0" max="30" style="flex:1;min-width:0">
+          <select id="pmAgeUnit" style="flex:1;min-width:0">
+            <option value="เดือน">เดือน</option>
+            <option value="ปี">ปี</option>
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label>เพศ</label>
+        <select id="pmGender">
+          <option>ตัวเมีย</option>
+          <option>ตัวผู้</option>
+          <option>ไม่ทราบ</option>
+        </select>
+      </div>
+    </div>
+    <!-- HEALTH SECTION -->
+    <div class="loc-box" style="margin-bottom:14px">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--text3);margin-bottom:12px">สุขภาพ &amp; ประวัติการรักษา</div>
+
+      <!-- ทำหมัน -->
+      <div style="margin-bottom:12px">
+        <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:7px">ทำหมัน</div>
+        <div style="display:flex;gap:8px">
+          <label id="lbl-spay-yes" onclick="toggleHealth('spay','yes')" style="flex:1;display:flex;align-items:center;gap:7px;padding:8px 11px;border:1.5px solid var(--border);border-radius:var(--rsm);cursor:pointer;background:var(--card);transition:all .15s;font-size:12px;font-weight:500;color:var(--text2)">
+            <span id="ic-spay-yes" style="width:16px;height:16px;border-radius:50%;border:1.5px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center"></span>ทำหมันแล้ว
+          </label>
+          <label id="lbl-spay-no" onclick="toggleHealth('spay','no')" style="flex:1;display:flex;align-items:center;gap:7px;padding:8px 11px;border:1.5px solid var(--border);border-radius:var(--rsm);cursor:pointer;background:var(--card);transition:all .15s;font-size:12px;font-weight:500;color:var(--text2)">
+            <span id="ic-spay-no" style="width:16px;height:16px;border-radius:50%;border:1.5px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center"></span>ยังไม่ทำหมัน
+          </label>
+          <label id="lbl-spay-uk" onclick="toggleHealth('spay','uk')" style="flex:1;display:flex;align-items:center;gap:7px;padding:8px 11px;border:1.5px solid var(--border);border-radius:var(--rsm);cursor:pointer;background:var(--card);transition:all .15s;font-size:12px;font-weight:500;color:var(--text2)">
+            <span id="ic-spay-uk" style="width:16px;height:16px;border-radius:50%;border:1.5px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center"></span>ไม่ทราบ
+          </label>
+        </div>
+      </div>
+
+      <!-- วัคซีน -->
+      <div style="margin-bottom:12px">
+        <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:7px">วัคซีน</div>
+        <div style="display:flex;gap:8px;margin-bottom:8px">
+          <label id="lbl-vax-yes" onclick="toggleHealth('vax','yes')" style="flex:1;display:flex;align-items:center;gap:7px;padding:8px 11px;border:1.5px solid var(--border);border-radius:var(--rsm);cursor:pointer;background:var(--card);transition:all .15s;font-size:12px;font-weight:500;color:var(--text2)">
+            <span id="ic-vax-yes" style="width:16px;height:16px;border-radius:50%;border:1.5px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center"></span>ฉีดวัคซีนแล้ว
+          </label>
+          <label id="lbl-vax-no" onclick="toggleHealth('vax','no')" style="flex:1;display:flex;align-items:center;gap:7px;padding:8px 11px;border:1.5px solid var(--border);border-radius:var(--rsm);cursor:pointer;background:var(--card);transition:all .15s;font-size:12px;font-weight:500;color:var(--text2)">
+            <span id="ic-vax-no" style="width:16px;height:16px;border-radius:50%;border:1.5px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center"></span>ยังไม่ได้ฉีด
+          </label>
+          <label id="lbl-vax-uk" onclick="toggleHealth('vax','uk')" style="flex:1;display:flex;align-items:center;gap:7px;padding:8px 11px;border:1.5px solid var(--border);border-radius:var(--rsm);cursor:pointer;background:var(--card);transition:all .15s;font-size:12px;font-weight:500;color:var(--text2)">
+            <span id="ic-vax-uk" style="width:16px;height:16px;border-radius:50%;border:1.5px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center"></span>ไม่ทราบ
+          </label>
+        </div>
+        <!-- วัคซีน detail (แสดงเมื่อเลือก "ฉีดแล้ว") -->
+        <div id="vax-detail" class="hide" style="background:var(--card);border:1px solid var(--border);border-radius:var(--rsm);padding:12px 13px">
+          <div style="font-size:11.5px;font-weight:600;color:var(--text2);margin-bottom:8px">วัคซีนพื้นฐาน (เลือกที่ได้รับแล้ว)</div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px" id="vax-chips">
+            <span class="vchip" data-v="DHPP" onclick="toggleVaxChip(this)">DHPP (หัด/ตับอักเสบ/พาร์โว/พาราอินฟลู)</span>
+            <span class="vchip" data-v="Rabies" onclick="toggleVaxChip(this)">พิษสุนัขบ้า</span>
+            <span class="vchip" data-v="Bordetella" onclick="toggleVaxChip(this)">Bordetella (ไอกรนสุนัข)</span>
+            <span class="vchip" data-v="Leptospirosis" onclick="toggleVaxChip(this)">Leptospirosis</span>
+            <span class="vchip" data-v="Influenza" onclick="toggleVaxChip(this)">ไข้หวัดใหญ่สุนัข</span>
+            <span class="vchip" data-v="FVRCP" onclick="toggleVaxChip(this)">FVRCP (แมว 3 in 1)</span>
+            <span class="vchip" data-v="FeLV" onclick="toggleVaxChip(this)">FeLV (มะเร็งเม็ดเลือดขาวแมว)</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <div style="font-size:11.5px;color:var(--text2);white-space:nowrap">ฉีดไปแล้ว</div>
+            <div style="display:flex;gap:4px;align-items:center">
+              <button type="button" onclick="changeVaxCount(-1)" style="width:26px;height:26px;border:1px solid var(--border);border-radius:var(--rsm);background:var(--warm);cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;color:var(--text2)">−</button>
+              <span id="vax-count-val" style="min-width:20px;text-align:center;font-size:14px;font-weight:600">1</span>
+              <button type="button" onclick="changeVaxCount(1)" style="width:26px;height:26px;border:1px solid var(--border);border-radius:var(--rsm);background:var(--warm);cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;color:var(--text2)">+</button>
+            </div>
+            <div style="font-size:11.5px;color:var(--text2)">เข็ม</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- สุขภาพทั่วไป -->
+      <div style="margin-bottom:0">
+        <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:7px">สุขภาพทั่วไป (เลือกได้หลายข้อ)</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px" id="health-chips">
+          <span class="hchip" data-h="ไม่มีโรคประจำตัว" onclick="toggleHealthChip(this)">ไม่มีโรคประจำตัว</span>
+          <span class="hchip" data-h="แข็งแรงดี" onclick="toggleHealthChip(this)">แข็งแรงดี</span>
+          <span class="hchip" data-h="กำลังรักษาอยู่" onclick="toggleHealthChip(this)">กำลังรักษาอยู่</span>
+          <span class="hchip" data-h="FIV บวก" onclick="toggleHealthChip(this)">FIV บวก</span>
+          <span class="hchip" data-h="FeLV บวก" onclick="toggleHealthChip(this)">FeLV บวก</span>
+          <span class="hchip" data-h="พิการ/ทุพพลภาพ" onclick="toggleHealthChip(this)">พิการ/ทุพพลภาพ</span>
+          <span class="hchip" data-h="มีโรคเรื้อรัง" onclick="toggleHealthChip(this)">มีโรคเรื้อรัง</span>
+          <span class="hchip" data-h="ต้องการดูแลพิเศษ" onclick="toggleHealthChip(this)">ต้องการดูแลพิเศษ</span>
+          <span class="hchip" data-h="ไม่ทราบ" onclick="toggleHealthChip(this)">ไม่ทราบ</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- รายละเอียดเพิ่มเติม (50 คำ) -->
+    <div class="field">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:5px">
+        <label style="margin:0">รายละเอียดเพิ่มเติม</label>
+        <span id="desc-count" style="font-size:11px;color:var(--text3)">0/50 คำ</span>
+      </div>
+      <textarea id="pmDesc" rows="3" placeholder="เช่น เชื่อง ชอบอยู่ในร่ม ไม่เคยออกนอกบ้าน ชอบเด็ก เล่นน้ำได้..." oninput="countWords(this)" style="resize:none"></textarea>
+      <div id="desc-warn" class="hide" style="font-size:11px;color:var(--rose);margin-top:3px">เกิน 50 คำ กรุณาย่อให้สั้นลง</div>
+    </div>
+    <div class="loc-box">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--text3);margin-bottom:10px">ที่ตั้งของสัตว์</div>
+      <div class="field-row">
+        <div class="field" style="margin-bottom:10px">
+          <label>จังหวัด</label>
+          <select id="pmProv" onchange="pmProvChange()">
+            <option value="">-- เลือกจังหวัด --</option>
+            <option>กรุงเทพมหานคร</option><option>เชียงใหม่</option><option>ภูเก็ต</option>
+            <option>ขอนแก่น</option><option>นนทบุรี</option><option>ปทุมธานี</option>
+            <option>ชลบุรี</option><option>สงขลา</option><option>อุดรธานี</option>
+            <option>นครราชสีมา</option><option>เชียงราย</option><option>สุราษฎร์ธานี</option>
+          </select>
+        </div>
+        <div class="field" style="margin-bottom:10px">
+          <label>เขต / อำเภอ</label>
+          <select id="pmDist" onchange="pmDistChange()" disabled>
+            <option>-- เลือกจังหวัดก่อน --</option>
+          </select>
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field" style="margin-bottom:0">
+          <label>แขวง / ตำบล</label>
+          <select id="pmSub" disabled><option>-- เลือกเขตก่อน --</option></select>
+        </div>
+        <div class="field" style="margin-bottom:0">
+          <label>รหัสไปรษณีย์</label>
+          <input id="pmZip" placeholder="—" readonly style="background:var(--warm2);cursor:default;font-weight:600">
+        </div>
+      </div>
+    </div>
+    <!-- Org paywall notice if over free quota -->
+    <div id="pm-paywall" class="hide" style="background:var(--amber-bg);border:1px solid var(--amber-l);border-radius:var(--r);padding:11px 13px;margin-bottom:14px;font-size:12px;color:var(--text2)">
+      <div style="font-weight:600;margin-bottom:4px">โควต้าฟรีหมดแล้ว (3/3 โพสต์)</div>
+      <div>อัปเกรดเป็น Basic (199 บาท/เดือน) เพื่อโพสต์ไม่จำกัด</div>
+      <button onclick="openPricing()" style="margin-top:8px;padding:5px 14px;border:none;background:var(--amber);color:#fff;border-radius:var(--rpill);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">ดูแผนราคา</button>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-lt" style="flex:1" onclick="closePostModal()">ยกเลิก</button>
+      <button class="btn btn-dk" style="flex:2" id="pm-submit-btn" onclick="submitPost()">โพสต์เลย</button>
+    </div>
+  </div>
+</div>
+
+<!-- TERMS MODAL -->
+<div class="modal-bg" id="termsModal" onclick="if(event.target===this)closeTerms()">
+  <div class="modal" style="max-width:520px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <h3 style="margin:0">ข้อกำหนดและเงื่อนไข</h3>
+      <button onclick="closeTerms()" style="background:none;border:none;cursor:pointer;font-size:18px;color:var(--text3)">✕</button>
+    </div>
+    <div style="font-size:12px;color:var(--text2);line-height:1.8;max-height:65vh;overflow-y:auto;padding-right:6px">
+      <div style="font-weight:700;font-size:13px;margin-bottom:6px">1. ขอบเขตการใช้งาน</div>
+      <p style="margin-bottom:10px">PawMap เป็นแพลตฟอร์มสำหรับการรับเลี้ยงสัตว์เท่านั้น ไม่อนุญาตให้ใช้เพื่อซื้อขาย แลกเปลี่ยน หรือธุรกรรมเชิงพาณิชย์ใดๆ ที่เกี่ยวกับสัตว์</p>
+      <div style="font-weight:700;font-size:13px;margin-bottom:6px">2. ข้อมูลผู้ใช้</div>
+      <p style="margin-bottom:10px">ผู้ใช้ต้องให้ข้อมูลที่ถูกต้องและเป็นความจริง เลขบัตรประชาชนและข้อมูลส่วนตัวจะถูกเข้ารหัสและไม่ถูกเปิดเผยต่อบุคคลที่สาม ยกเว้นในกรณีที่กฎหมายกำหนด</p>
+      <div style="font-weight:700;font-size:13px;margin-bottom:6px">3. ข้อจำกัดการรับเลี้ยง</div>
+      <p style="margin-bottom:10px">บุคคลทั่วไปสามารถรับเลี้ยงสัตว์ได้สูงสุด 3 ตัวต่อปีปฏิทิน และต้องรอ 30 วันระหว่างการรับเลี้ยงแต่ละครั้ง เพื่อป้องกันการรับสัตว์ไปในปริมาณมากเกินความเหมาะสม</p>
+      <div style="font-weight:700;font-size:13px;margin-bottom:6px">4. บัญชีผู้ใช้</div>
+      <p style="margin-bottom:10px">1 เบอร์โทรศัพท์สามารถสร้างได้ 1 บัญชีเท่านั้น การสร้างบัญชีหลายบัญชีเพื่อหลีกเลี่ยงข้อจำกัดถือเป็นการฝ่าฝืนข้อกำหนด และอาจนำไปสู่การระงับบัญชีถาวร</p>
+      <div style="font-weight:700;font-size:13px;margin-bottom:6px">5. เนื้อหาที่ห้ามโพสต์</div>
+      <p style="margin-bottom:10px">ห้ามโพสต์ข้อมูลเท็จ รูปภาพที่ไม่ใช่ของสัตว์จริง หรือเนื้อหาที่ก่อให้เกิดความเข้าใจผิด การโพสต์เพื่อหลอกลวง กักตุน หรือทารุณกรรมสัตว์ถือเป็นความผิดร้ายแรง</p>
+      <div style="font-weight:700;font-size:13px;margin-bottom:6px">6. สำหรับองค์กร / Shelter</div>
+      <p style="margin-bottom:10px">องค์กรที่ลงทะเบียนต้องให้ข้อมูลที่ถูกต้องและอาจถูกตรวจสอบโดยทีม PawMap ก่อนได้รับ badge ยืนยัน แผน Basic และ Pro ชำระเป็นรายเดือน สามารถยกเลิกได้ทุกเมื่อ</p>
+      <div style="font-weight:700;font-size:13px;margin-bottom:6px">7. ความรับผิดชอบ</div>
+      <p style="margin-bottom:10px">PawMap ทำหน้าที่เป็นสื่อกลางเท่านั้น ไม่รับผิดชอบต่อผลลัพธ์ของการรับเลี้ยงที่เกิดขึ้นนอกแพลตฟอร์ม ผู้ใช้ควรใช้วิจารณญาณในการติดต่อและนัดพบ</p>
+      <div style="font-weight:700;font-size:13px;margin-bottom:6px">8. การแก้ไขข้อกำหนด</div>
+      <p>PawMap ขอสงวนสิทธิ์ในการแก้ไขข้อกำหนดเหล่านี้ได้ตลอดเวลา โดยจะแจ้งผู้ใช้ผ่านอีเมลหรือการแจ้งเตือนในแอป การใช้งานแพลตฟอร์มต่อเนื่องถือว่ายอมรับข้อกำหนดที่แก้ไขแล้ว</p>
+    </div>
+    <div style="margin-top:14px;display:flex;justify-content:flex-end">
+      <button class="btn btn-dk" onclick="acceptTermsFromModal()">รับทราบและปิด</button>
+    </div>
+  </div>
+</div>
+
+<!-- PRICING MODAL -->
+<div class="modal-bg" id="pricingModal" onclick="if(event.target===this)closePricing()">
+  <div class="modal" style="max-width:500px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+      <h3 style="margin:0">แผนราคาสำหรับองค์กร</h3>
+      <button onclick="closePricing()" style="background:none;border:none;cursor:pointer;font-size:18px;color:var(--text3)">✕</button>
+    </div>
+    <p style="font-size:12px;color:var(--text3);margin-bottom:16px">ทดลองใช้ Basic/Pro ฟรี 30 วัน — ยกเลิกได้ทุกเมื่อ</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
+      <!-- Free -->
+      <div style="border:1.5px solid var(--border);border-radius:var(--r);padding:14px 12px;text-align:center">
+        <div style="font-size:12px;font-weight:600;color:var(--text3);margin-bottom:6px">ฟรี</div>
+        <div style="font-size:24px;font-weight:700;margin-bottom:4px">฿0</div>
+        <div style="font-size:11px;color:var(--text3);margin-bottom:12px">/เดือน</div>
+        <div style="font-size:11px;text-align:left;line-height:1.9;color:var(--text2)">
+          <div>✓ 3 โพสต์/เดือน</div>
+          <div>✓ รูปสูงสุด 3 รูป/โพสต์</div>
+          <div>✓ หมุดสีเขียวปกติ</div>
+          <div style="color:var(--text4)">— ไม่มี Badge</div>
+          <div style="color:var(--text4)">— ไม่มี Analytics</div>
+          <div style="color:var(--text4)">— ไม่มี Boost</div>
+          <div style="color:var(--text4)">— ไม่มี Push Notif</div>
+        </div>
+        <button onclick="selectPlan('free')" style="margin-top:12px;width:100%;padding:7px;border:1.5px solid var(--border);background:var(--warm);border-radius:var(--r);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--text2)">ใช้งานฟรี</button>
+      </div>
+      <!-- Basic -->
+      <div style="border:2px solid var(--sage);border-radius:var(--r);padding:14px 12px;text-align:center;position:relative">
+        <div style="position:absolute;top:-10px;left:50%;transform:translateX(-50%);background:var(--sage);color:#fff;font-size:10px;font-weight:700;padding:2px 10px;border-radius:20px;white-space:nowrap">แนะนำ</div>
+        <div style="font-size:12px;font-weight:600;color:var(--sage);margin-bottom:6px">Basic</div>
+        <div style="font-size:24px;font-weight:700;margin-bottom:4px">฿199</div>
+        <div style="font-size:11px;color:var(--text3);margin-bottom:12px">/เดือน</div>
+        <div style="font-size:11px;text-align:left;line-height:1.9;color:var(--text2)">
+          <div>✓ 20 โพสต์/เดือน</div>
+          <div>✓ รูปสูงสุด 5 รูป/โพสต์</div>
+          <div>✓ หมุด + โลโก้ Shelter</div>
+          <div>✓ Verified Badge</div>
+          <div>✓ ดันโพสต์ 2 ครั้ง/เดือน</div>
+          <div>✓ ดูยอด Views</div>
+          <div style="color:var(--text4)">— ไม่มี Push Notif</div>
+        </div>
+        <button onclick="selectPlan('basic')" style="margin-top:12px;width:100%;padding:7px;border:none;background:var(--sage);color:#fff;border-radius:var(--r);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">เลือกแผนนี้</button>
+      </div>
+      <!-- Pro -->
+      <div style="border:2px solid var(--amber);border-radius:var(--r);padding:14px 12px;text-align:center">
+        <div style="font-size:12px;font-weight:600;color:var(--bark-d);margin-bottom:6px">Pro</div>
+        <div style="font-size:24px;font-weight:700;margin-bottom:4px">฿499</div>
+        <div style="font-size:11px;color:var(--text3);margin-bottom:12px">/เดือน</div>
+        <div style="font-size:11px;text-align:left;line-height:1.9;color:var(--text2)">
+          <div>✓ โพสต์ไม่จำกัด</div>
+          <div>✓ หมุดใหญ่ไฮไลต์บนแผนที่</div>
+          <div>✓ Verified Badge</div>
+          <div>✓ ดันโพสต์อัตโนมัติ 5 ครั้ง/เดือน</div>
+          <div>✓ ดูยอด Views + Save + แชท</div>
+          <div>✓ Push Notif รัศมี 10 กม.</div>
+        </div>
+        <button onclick="selectPlan('pro')" style="margin-top:12px;width:100%;padding:7px;border:none;background:var(--amber-l);color:var(--bark-xd);border-radius:var(--r);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">เลือกแผนนี้</button>
+      </div>
+    </div>
+    <p style="font-size:11px;color:var(--text3);text-align:center;margin-top:12px">ชำระผ่าน PromptPay / บัตรเครดิต / โอนธนาคาร · ออกใบเสร็จได้</p>
+  </div>
+</div>
+
+<!-- P2P REQUEST DETAIL MODAL -->
+<div class="modal-bg" id="reqModal" onclick="if(event.target===this)closeReqModal()">
+  <div class="modal" style="max-width:420px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <h3 style="margin:0">คำขอรับเลี้ยง</h3>
+      <button onclick="closeReqModal()" style="background:none;border:none;cursor:pointer;font-size:18px;color:var(--text3)">✕</button>
+    </div>
+    <div id="reqModalContent"></div>
+    <div style="display:flex;gap:8px;margin-top:16px">
+      <button class="btn btn-lt" style="flex:1" onclick="closeReqModal()">ปิด</button>
+      <button class="btn btn-lt" style="flex:1" onclick="showToast('ส่งข้อความแล้ว');closeReqModal()">แชท</button>
+      <button class="btn btn-sg" style="flex:1" onclick="showToast('อนุมัติแล้ว');closeReqModal()">อนุมัติ</button>
+      <button class="btn" style="flex:1;background:var(--rose-bg);color:var(--rose);border:none" onclick="showToast('ปฏิเสธแล้ว');closeReqModal()">ปฏิเสธ</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════
+// DATA
+// ═══════════════════════════
+const PETS = [
+  {id:1,name:'มะม่วง',breed:'เปอร์เซีย',age:'8 เดือน',gender:'ตัวเมีย',score:92,em:'🐱',sp:'cat',tags:['ฉีดยาแล้ว','ตอนแล้ว','อพาร์ทเมนต์ได้'],tc:['tg','tg','ts'],lat:13.7360,lng:100.5600,shelter:'Happy Paws',area:'วัฒนา, กทม.'},
+  {id:2,name:'โอ๊ต',breed:'Golden Retriever',age:'2 ปี',gender:'ตัวผู้',score:85,em:'🐶',sp:'dog',tags:['ฉีดยาแล้ว','ชอบเด็ก','พลังงานสูง'],tc:['tg','ts','ta'],lat:13.7510,lng:100.5440,shelter:'Happy Paws',area:'จตุจักร, กทม.'},
+  {id:3,name:'ลูกเกด',breed:'Mix',age:'3 เดือน',gender:'ตัวเมีย',score:78,em:'🐱',sp:'cat',tags:['ลูกแมว','ยังไม่ฉีดยา'],tc:['ta','tr'],lat:13.7250,lng:100.5230,shelter:'Rescue BKK',area:'บางรัก, กทม.'},
+  {id:4,name:'บัตเตอร์',breed:'Lop',age:'1 ปี',gender:'ตัวผู้',score:70,em:'🐰',sp:'rabbit',tags:['ฉีดยาแล้ว','เงียบมาก'],tc:['tg','ts'],lat:13.7570,lng:100.5750,shelter:'Happy Paws',area:'ห้วยขวาง, กทม.'},
+  {id:5,name:'ดาว',breed:'Shih Tzu',age:'5 ปี',gender:'ตัวเมีย',score:88,em:'🐶',sp:'dog',tags:['ฉีดยาแล้ว','ตอนแล้ว','เข้ากับแมว'],tc:['tg','tg','ts'],lat:13.7280,lng:100.5390,shelter:'Rescue BKK',area:'ปทุมวัน, กทม.'},
+  {id:6,name:'ส้ม',breed:'Orange Tabby',age:'1.5 ปี',gender:'ตัวผู้',score:65,em:'🐱',sp:'cat',tags:['ยังไม่ตอน','พลังงานสูง'],tc:['tr','ta'],lat:13.7420,lng:100.5080,shelter:'Happy Paws',area:'บางกอกน้อย, กทม.'},
+  {id:7,name:'มิ้ง',breed:'Siamese',age:'4 ปี',gender:'ตัวเมีย',score:95,em:'🐱',sp:'cat',tags:['ฉีดยาแล้ว','ตอนแล้ว','เชื่อง'],tc:['tg','tg','ts'],lat:13.7450,lng:100.5530,shelter:'Happy Paws',area:'คลองเตย, กทม.'},
+  {id:8,name:'เบียร์',breed:'Labrador',age:'3 ปี',gender:'ตัวผู้',score:80,em:'🐶',sp:'dog',tags:['ฉีดยาแล้ว','ชอบวิ่ง'],tc:['tg','ta'],lat:13.7190,lng:100.5480,shelter:'Rescue BKK',area:'พระโขนง, กทม.'},
+];
+const SHELTERS = [
+  {name:'Happy Paws Rescue',lat:13.7400,lng:100.5610},
+  {name:'Rescue BKK',lat:13.7220,lng:100.5350},
+  {name:'Paws & Care',lat:13.7600,lng:100.5200},
+  {name:'BKK Animal Care',lat:13.7100,lng:100.5700},
+];
+const THREADS = [
+  {id:1,name:'มะม่วง 🐱',sub:'เกี่ยวกับ: มะม่วง · วัฒนา',av:'🐱',prev:'สวัสดีครับ ยังรับเลี้ยงอยู่ไหมครับ?',time:'10:32',unread:2,
+   msgs:[{me:false,txt:'สวัสดีครับ ยังรับเลี้ยงอยู่ไหมครับ?',t:'10:30'},{me:true,txt:'สวัสดีค่ะ ยังว่างอยู่เลยค่ะ 😊',t:'10:32'},{me:false,txt:'แมวตัวนี้เคยอยู่อพาร์ทเมนต์ไหมครับ?',t:'10:33'},{me:true,txt:'เคยค่ะ เลี้ยงในคอนโดมาตั้งแต่เกิดค่ะ',t:'10:35'}]},
+  {id:2,name:'Happy Paws 🏠',sub:'Shelter · วัฒนา, กรุงเทพฯ',av:'🏠',prev:'คำขอผ่านการพิจารณาแล้ว!',time:'เมื่อวาน',unread:1,
+   msgs:[{me:false,txt:'สวัสดีค่ะ รับทราบคำขอรับเลี้ยงแล้วนะคะ',t:'เมื่อวาน'},{me:false,txt:'คำขอผ่านการพิจารณาเบื้องต้นแล้ว! 🎉',t:'เมื่อวาน'},{me:true,txt:'ขอบคุณมากครับ!',t:'เมื่อวาน'}]},
+  {id:3,name:'โอ๊ต 🐶',sub:'เกี่ยวกับ: โอ๊ต · จตุจักร',av:'🐶',prev:'ขอดูรูปเพิ่มได้ไหมครับ',time:'2 วันก่อน',unread:0,
+   msgs:[{me:false,txt:'ขอดูรูปเพิ่มได้ไหมครับ?',t:'2 วันก่อน'},{me:true,txt:'ได้เลยค่ะ จะส่งให้นะคะ 📸',t:'2 วันก่อน'}]},
+];
+const QUIZ_QS = [
+  {q:'คุณอาศัยอยู่ที่ไหน?',opts:[{i:'🏙',l:'อพาร์ทเมนต์/คอนโด'},{i:'🏡',l:'บ้านมีสวน'},{i:'🏢',l:'ทาวน์เฮาส์'}]},
+  {q:'คุณทำงานอยู่บ้านไหม?',opts:[{i:'💻',l:'WFH เกือบทุกวัน'},{i:'🚶',l:'ออกไปทำงาน'},{i:'🔄',l:'ผสมกัน'}]},
+  {q:'ระดับกิจกรรมของคุณ?',opts:[{i:'🛋',l:'ชอบอยู่นิ่งๆ'},{i:'🚶',l:'เดินออกกำลังบ้าง'},{i:'🏃',l:'ออกกำลังสม่ำเสมอ'}]},
+  {q:'มีเด็กหรือสัตว์เลี้ยงอื่นในบ้านไหม?',opts:[{i:'✅',l:'มีเด็กเล็ก'},{i:'🐾',l:'มีสัตว์เลี้ยงอื่น'},{i:'❌',l:'ไม่มีทั้งคู่'}]},
+  {q:'ต้องการสัตว์เลี้ยงแบบไหน?',opts:[{i:'🤗',l:'ชอบกอดและอยู่ใกล้'},{i:'🎾',l:'ชอบเล่นกระฉับ'},{i:'😌',l:'สงบ เป็นเพื่อน'}]},
+];
+const CHART_DATA = {
+  2567:{a:[5,8,6,12,9,14,11,8,16,12,18,12],n:[8,11,9,15,12,17,14,11,19,15,21,16]},
+  2568:{a:[14,18,15,22,19,25,21,17,0,0,0,0],n:[17,21,18,25,22,28,24,20,0,0,0,0]},
+};
+const MONTHS = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+const LOC = {
+  'กรุงเทพมหานคร':{
+    'วัฒนา':{s:['คลองเตยเหนือ','คลองตัน','พระโขนงเหนือ'],z:'10110'},
+    'คลองเตย':{s:['คลองเตย','คลองตัน','พระโขนง'],z:'10110'},
+    'บางรัก':{s:['บางรัก','มหาพฤฒาราม','สีลม'],z:'10500'},
+    'ห้วยขวาง':{s:['ห้วยขวาง','บางกะปิ','สามเสนนอก'],z:'10310'},
+    'จตุจักร':{s:['จตุจักร','ลาดยาว','เสนานิคม'],z:'10900'},
+    'ปทุมวัน':{s:['ลุมพินี','รองเมือง','ปทุมวัน'],z:'10330'},
+    'ลาดพร้าว':{s:['ลาดพร้าว','จรเข้บัว'],z:'10230'},
+    'พระโขนง':{s:['พระโขนง','บางจาก'],z:'10260'},
+    'บางกอกน้อย':{s:['บางขุนนนท์','บางขุนศรี','อรุณอมรินทร์'],z:'10700'},
+    'ดอนเมือง':{s:['ดอนเมือง','สีกัน'],z:'10210'},
+  },
+  'เชียงใหม่':{
+    'เมืองเชียงใหม่':{s:['ช้างเผือก','สุเทพ','พระสิงห์'],z:'50200'},
+    'สันทราย':{s:['สันทรายหลวง','สันทรายน้อย'],z:'50210'},
+    'หางดง':{s:['หางดง','หนองแก๋ว'],z:'50230'},
+  },
+  'ภูเก็ต':{
+    'เมืองภูเก็ต':{s:['ตลาดใหญ่','รัษฎา','วิชิต'],z:'83000'},
+    'กะทู้':{s:['กะทู้','ป่าตอง','กมลา'],z:'83120'},
+    'ถลาง':{s:['เทพกษัตรีย์','ศรีสุนทร'],z:'83110'},
+  },
+  'ขอนแก่น':{
+    'เมืองขอนแก่น':{s:['ในเมือง','สาวะถี','บ้านทุ่ม'],z:'40000'},
+    'บ้านไผ่':{s:['บ้านไผ่','เมืองเพีย'],z:'40110'},
+  },
+  'นนทบุรี':{
+    'เมืองนนทบุรี':{s:['สวนใหญ่','ตลาดขวัญ'],z:'11000'},
+    'ปากเกร็ด':{s:['ปากเกร็ด','คลองพระอุดม'],z:'11120'},
+    'บางใหญ่':{s:['บางใหญ่','บางแม่นาง'],z:'11140'},
+  },
+  'ปทุมธานี':{
+    'เมืองปทุมธานี':{s:['บางปรอก','บ้านกลาง'],z:'12000'},
+    'ธัญบุรี':{s:['ประชาธิปัตย์','รังสิต'],z:'12110'},
+    'ลำลูกกา':{s:['ลำลูกกา','คูคต'],z:'12150'},
+  },
+  'ชลบุรี':{
+    'เมืองชลบุรี':{s:['บางปลาสร้อย','บ้านปึก'],z:'20000'},
+    'พัทยา':{s:['หนองปรือ','นาเกลือ'],z:'20150'},
+    'ศรีราชา':{s:['ศรีราชา','สุรศักดิ์'],z:'20110'},
+  },
+  'สงขลา':{
+    'เมืองสงขลา':{s:['บ่อยาง','เขารูปช้าง'],z:'90000'},
+    'หาดใหญ่':{s:['หาดใหญ่','ควนลัง'],z:'90110'},
+  },
+  'อุดรธานี':{
+    'เมืองอุดรธานี':{s:['หมากแข้ง','บ้านเลื่อม'],z:'41000'},
+  },
+  'นครราชสีมา':{
+    'เมืองนครราชสีมา':{s:['ในเมือง','โพธิ์กลาง'],z:'30000'},
+    'ปากช่อง':{s:['ปากช่อง','กลางดง'],z:'30130'},
+  },
+  'เชียงราย':{
+    'เมืองเชียงราย':{s:['เวียง','รอบเวียง'],z:'57000'},
+    'แม่สาย':{s:['แม่สาย','เวียงพางคำ'],z:'57130'},
+  },
+  'สุราษฎร์ธานี':{
+    'เมืองสุราษฎร์ธานี':{s:['ตลาด','มะขามเตี้ย'],z:'84000'},
+    'เกาะสมุย':{s:['อ่างทอง','บ่อผุด'],z:'84140'},
+  },
+};
+
+// ═══════════════════════════
+// STATE
+// ═══════════════════════════
+let activePet=null, activePetFilter='all', activeThread=null;
+let adoptStep=0, selectedAdoptPet=PETS[0];
+let quizStep=0, quizAnswers=[];
+let postEmoji='🐱', chartYear=2568;
+// ═══════════════════════════
+// ROLE & AUTH
+// ═══════════════════════════
+let currentRole='personal', orgPlan='free', orgPostCount=0;
+
+function setLoginTab(t){
+  ['login','register'].forEach(x=>{
+    document.getElementById('ltab-'+x).classList.toggle('on',x===t);
+    document.getElementById('lf-'+x).classList.toggle('hide',x!==t);
+  });
+}
+function doLogin(){
+  currentRole='personal';orgPostCount=0;updateNavForRole();
+  showToast('เข้าสู่ระบบสำเร็จ');setTimeout(()=>goPage('map'),400);
+}
+function doRegister(){
+  const terms=document.getElementById('reg-terms');
+  if(!terms||!terms.checked){showToast('กรุณายอมรับข้อกำหนดก่อน');return;}
+  document.querySelectorAll('input[name="orgplan"]').forEach(r=>{if(r.checked)orgPlan=r.value;});
+  if(currentRole==='org'){orgPostCount=0;updateNavForRole();showToast('สมัครองค์กรสำเร็จ');setTimeout(()=>goPage('shelter'),400);}
+  else{currentRole='personal';updateNavForRole();showToast('สมัครสมาชิกสำเร็จ');setTimeout(()=>goPage('map'),400);}
+}
+function demoLogin(role){
+  currentRole=role;orgPlan='free';orgPostCount=0;updateNavForRole();
+  showToast('ทดลองใช้งาน: '+(role==='org'?'องค์กร/Shelter':'บุคคลทั่วไป'));
+  setTimeout(()=>goPage(role==='org'?'shelter':'map'),400);
+}
+function selectRole(r){
+  currentRole=r;const isOrg=r==='org';
+  const on='border:2px solid var(--bark-d);border-radius:var(--r);padding:12px;text-align:center;cursor:pointer;background:var(--warm)';
+  const off='border:2px solid var(--border);border-radius:var(--r);padding:12px;text-align:center;cursor:pointer;background:var(--card)';
+  document.getElementById('role-personal').style.cssText=!isOrg?on:off;
+  document.getElementById('role-org').style.cssText=isOrg?on:off;
+  document.getElementById('reg-personal-fields').classList.toggle('hide',isOrg);
+  document.getElementById('reg-org-fields').classList.toggle('hide',!isOrg);
+}
+function openTerms(e){if(e)e.preventDefault();document.getElementById('termsModal').classList.add('open');}
+function closeTerms(){document.getElementById('termsModal').classList.remove('open');}
+function acceptTermsFromModal(){const cb=document.getElementById('reg-terms');if(cb)cb.checked=true;closeTerms();}
+function openPricing(){document.getElementById('pricingModal').classList.add('open');}
+function closePricing(){document.getElementById('pricingModal').classList.remove('open');}
+function selectPlan(p){orgPlan=p;closePricing();const n={free:'ฟรี',basic:'Basic 199฿',pro:'Pro 499฿'};showToast('เลือกแผน '+n[p]);}
+
+// ═══════════════════════════
+// POST MODAL
+// ═══════════════════════════
+const BREEDS={
+  cat:['Domestic Shorthair','Domestic Longhair','Siamese','Persian','Maine Coon','Ragdoll','Scottish Fold','British Shorthair','Bengal','Abyssinian','American Shorthair','Birman','Oriental','Turkish Angora','Russian Blue','อื่นๆ'],
+  dog:['Labrador Retriever','Golden Retriever','Shih Tzu','Poodle','Chihuahua','Pomeranian','French Bulldog','Beagle','Corgi','Husky','German Shepherd','Maltese','Dachshund','Yorkshire Terrier','Pug','Mixed/ลูกผสม','อื่นๆ'],
+  rabbit:['Holland Lop','Mini Lop','Netherland Dwarf','Rex','Angora','อื่นๆ'],
+  other:['อื่นๆ'],
+};
+let currentSp='cat';
+function pickE(el){document.querySelectorAll('.eo').forEach(e=>e.classList.remove('on'));el.classList.add('on');postEmoji=el.dataset.e;currentSp=el.dataset.sp||'cat';updateBreedList();}
+function updateBreedList(){
+  const sel=document.getElementById('pmBreed');if(!sel)return;
+  const list=BREEDS[currentSp]||BREEDS.other;
+  sel.innerHTML='<option value="">-- เลือกสายพันธุ์ --</option>'+list.map(b=>'<option value="'+b+'">'+b+'</option>').join('');
+  const o=document.getElementById('pmBreedOther');if(o)o.classList.add('hide');
+}
+function pmBreedChange(){const v=document.getElementById('pmBreed').value;document.getElementById('pmBreedOther').classList.toggle('hide',v!=='อื่นๆ');}
+function openPostModal(){
+  document.getElementById('postModal').classList.add('open');
+  resetHealthForm();updateBreedList();
+  const badge=document.getElementById('pm-quota-badge'),paywall=document.getElementById('pm-paywall'),btn=document.getElementById('pm-submit-btn');
+  if(currentRole==='org'&&orgPlan==='free'){
+    const rem=Math.max(0,3-orgPostCount);
+    if(badge)badge.innerHTML='<span style="font-size:11px;padding:3px 8px;border-radius:20px;background:'+(rem>0?'var(--sage-bg)':'var(--amber-bg)')+';color:'+(rem>0?'#2A6A40':'#8A5010')+';font-weight:600">โพสต์คงเหลือ '+rem+'/3</span>';
+    if(paywall)paywall.classList.toggle('hide',rem>0);
+    if(btn){btn.disabled=rem<=0;btn.style.opacity=rem<=0?'0.5':'';btn.style.cursor=rem<=0?'not-allowed':'';}
+  } else {if(badge)badge.innerHTML='';if(paywall)paywall.classList.add('hide');if(btn){btn.disabled=false;btn.style.opacity='';btn.style.cursor='';}}
+}
+function closePostModal(){document.getElementById('postModal').classList.remove('open');resetHealthForm();}
+function submitPost(){
+  const descEl=document.getElementById('pmDesc'),descText=descEl?descEl.value.trim():'';
+  if(descText.split(/\s+/).filter(Boolean).length>50){showToast('รายละเอียดเกิน 50 คำ');return;}
+  const name=(document.getElementById('pmName').value||'').trim()||'น้องใหม่';
+  const ageNum=document.getElementById('pmAgeNum').value,ageUnit=document.getElementById('pmAgeUnit').value;
+  const breed=document.getElementById('pmBreed').value,breedOther=(document.getElementById('pmBreedOther')||{}).value||'';
+  const pv=document.getElementById('pmProv').value,dv=document.getElementById('pmDist').value,zp=document.getElementById('pmZip').value;
+  const breedLabel=breed==='อื่นๆ'?(breedOther||'สายพันธุ์ผสม'):breed;
+  const ageTxt=ageNum?(ageNum+' '+ageUnit):'';
+  const loc=(pv&&dv)?(' · '+dv+', '+pv+(zp?' ('+zp+')':'')):'';
+  if(currentRole==='org'&&orgPlan==='free')orgPostCount++;
+  closePostModal();
+  showToast('โพสต์ "'+postEmoji+' '+name+'"'+loc+' สำเร็จ');
+}
+
+// ═══════════════════════════
+// LOCATION DATA
+// ═══════════════════════════
+const LOC={
+  'กรุงเทพมหานคร':{'วัฒนา':{s:['คลองเตยเหนือ','คลองตัน','พระโขนงเหนือ'],z:'10110'},'คลองเตย':{s:['คลองเตย','คลองตัน','พระโขนง'],z:'10110'},'บางรัก':{s:['บางรัก','มหาพฤฒาราม','สีลม'],z:'10500'},'ห้วยขวาง':{s:['ห้วยขวาง','บางกะปิ','สามเสนนอก'],z:'10310'},'จตุจักร':{s:['จตุจักร','ลาดยาว','เสนานิคม'],z:'10900'},'ปทุมวัน':{s:['ลุมพินี','รองเมือง','ปทุมวัน'],z:'10330'},'ลาดพร้าว':{s:['ลาดพร้าว','จรเข้บัว'],z:'10230'},'พระโขนง':{s:['พระโขนง','บางจาก'],z:'10260'},'บางกอกน้อย':{s:['บางขุนนนท์','บางขุนศรี'],z:'10700'},'ดอนเมือง':{s:['ดอนเมือง','สีกัน'],z:'10210'}},
+  'เชียงใหม่':{'เมืองเชียงใหม่':{s:['ช้างเผือก','สุเทพ','พระสิงห์'],z:'50200'},'สันทราย':{s:['สันทรายหลวง','สันทรายน้อย'],z:'50210'}},
+  'ภูเก็ต':{'เมืองภูเก็ต':{s:['ตลาดใหญ่','รัษฎา','วิชิต'],z:'83000'},'กะทู้':{s:['กะทู้','ป่าตอง'],z:'83120'}},
+  'ขอนแก่น':{'เมืองขอนแก่น':{s:['ในเมือง','สาวะถี','บ้านทุ่ม'],z:'40000'}},
+  'นนทบุรี':{'เมืองนนทบุรี':{s:['สวนใหญ่','ตลาดขวัญ'],z:'11000'},'ปากเกร็ด':{s:['ปากเกร็ด','คลองพระอุดม'],z:'11120'},'บางใหญ่':{s:['บางใหญ่','บางแม่นาง'],z:'11140'}},
+  'ปทุมธานี':{'เมืองปทุมธานี':{s:['บางปรอก','บ้านกลาง'],z:'12000'},'ธัญบุรี':{s:['ประชาธิปัตย์','รังสิต'],z:'12110'},'ลำลูกกา':{s:['ลำลูกกา','คูคต'],z:'12150'}},
+  'ชลบุรี':{'เมืองชลบุรี':{s:['บางปลาสร้อย','บ้านปึก'],z:'20000'},'พัทยา':{s:['หนองปรือ','นาเกลือ'],z:'20150'}},
+  'สงขลา':{'เมืองสงขลา':{s:['บ่อยาง','เขารูปช้าง'],z:'90000'},'หาดใหญ่':{s:['หาดใหญ่','ควนลัง'],z:'90110'}},
+  'อุดรธานี':{'เมืองอุดรธานี':{s:['หมากแข้ง','บ้านเลื่อม'],z:'41000'}},
+  'นครราชสีมา':{'เมืองนครราชสีมา':{s:['ในเมือง','โพธิ์กลาง'],z:'30000'},'ปากช่อง':{s:['ปากช่อง','กลางดง'],z:'30130'}},
+  'เชียงราย':{'เมืองเชียงราย':{s:['เวียง','รอบเวียง'],z:'57000'}},
+  'สุราษฎร์ธานี':{'เมืองสุราษฎร์ธานี':{s:['ตลาด','มะขามเตี้ย'],z:'84000'},'เกาะสมุย':{s:['อ่างทอง','บ่อผุด'],z:'84140'}},
+};
+function pmProvChange(){
+  const pv=document.getElementById('pmProv').value,dd=document.getElementById('pmDist'),sd=document.getElementById('pmSub');
+  document.getElementById('pmZip').value='';
+  if(!pv||!LOC[pv]){dd.innerHTML='<option>-- เลือกจังหวัดก่อน --</option>';dd.disabled=true;sd.innerHTML='<option>-- เลือกเขตก่อน --</option>';sd.disabled=true;return;}
+  dd.disabled=false;dd.innerHTML='<option value="">-- เลือกเขต/อำเภอ --</option>'+Object.keys(LOC[pv]).map(d=>'<option>'+d+'</option>').join('');
+  sd.innerHTML='<option>-- เลือกเขตก่อน --</option>';sd.disabled=true;
+}
+function pmDistChange(){
+  const pv=document.getElementById('pmProv').value,dv=document.getElementById('pmDist').value,sd=document.getElementById('pmSub'),zp=document.getElementById('pmZip');
+  if(!pv||!dv||!LOC[pv]||!LOC[pv][dv]){sd.innerHTML='<option>-- เลือกเขตก่อน --</option>';sd.disabled=true;zp.value='';return;}
+  const info=LOC[pv][dv];sd.disabled=false;sd.innerHTML=info.s.map(s=>'<option>'+s+'</option>').join('');zp.value=info.z;
+}
+
+// ═══════════════════════════
+// VANILLA TILE MAP ENGINE
+// Uses OpenStreetMap tiles directly — no library needed
+// ═══════════════════════════
+const MAP_STATE = {
+  lat: 13.736, lng: 100.553, zoom: 13,
+  dragging: false, lastX: 0, lastY: 0,
+  offsetX: 0, offsetY: 0,
+  inited: false
+};
+let heatOn = true;
+let activePinId = null;
+let openPopupId = null;
+
+// Lat/Lng ↔ tile pixel conversion (Web Mercator / EPSG:3857)
+function lngToTileX(lng, z){ return Math.floor((lng+180)/360 * Math.pow(2,z)); }
+function latToTileY(lat, z){
+  const r = lat*Math.PI/180;
+  return Math.floor((1 - Math.log(Math.tan(r)+1/Math.cos(r))/Math.PI)/2 * Math.pow(2,z));
+}
+function tileToLng(x,z){ return x/Math.pow(2,z)*360-180; }
+function tileToLat(y,z){
+  const n = Math.PI - 2*Math.PI*y/Math.pow(2,z);
+  return 180/Math.PI*Math.atan(0.5*(Math.exp(n)-Math.exp(-n)));
+}
+function latLngToPixel(lat, lng, containerW, containerH) {
+  const z    = MAP_STATE.zoom;
+  const n    = Math.pow(2, z);
+  const px   = (lng + 180) / 360 * n * 256;
+  const sinL = Math.sin(lat * Math.PI / 180);
+  const py   = (0.5 - Math.log((1+sinL)/(1-sinL))/(4*Math.PI)) * n * 256;
+  // Center reference
+  const cpx  = (MAP_STATE.lng + 180) / 360 * n * 256;
+  const sinC = Math.sin(MAP_STATE.lat * Math.PI / 180);
+  const cpy  = (0.5 - Math.log((1+sinC)/(1-sinC))/(4*Math.PI)) * n * 256;
+  return {
+    x: containerW/2 + (px - cpx),
+    y: containerH/2 + (py - cpy)
+  };
+}
+
+function initMap() {
+  const el = document.getElementById('leafletMap');
+  if (!el || el.offsetHeight < 10) { setTimeout(initMap, 150); return; }
+  if (MAP_STATE.inited) { renderMapPins(); return; }
+  MAP_STATE.inited = true;
+  renderTiles();
+  renderHeat();
+  renderMapPins();
+  renderShelterPins();
+  bindMapEvents(el);
+}
+
+function renderTiles() {
+  const el = document.getElementById('leafletMap');
+  if (!el) return;
+  // Remove old tile layer
+  const old = el.querySelector('.map-tile-layer');
+  if (old) old.remove();
+
+  const W = el.offsetWidth, H = el.offsetHeight;
+  const z = MAP_STATE.zoom;
+  const n = Math.pow(2, z);
+  const tileSize = 256;
+
+  // Center tile
+  const cx = (MAP_STATE.lng + 180) / 360 * n;
+  const sinL = Math.sin(MAP_STATE.lat * Math.PI / 180);
+  const cy = (0.5 - Math.log((1+sinL)/(1-sinL))/(4*Math.PI)) * n;
+  const tcx = Math.floor(cx), tcy = Math.floor(cy);
+  const frac_x = cx - tcx, frac_y = cy - tcy;
+
+  const layer = document.createElement('div');
+  layer.className = 'map-tile-layer';
+  layer.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;';
+
+  const tilesH = Math.ceil(W / tileSize) + 3;
+  const tilesV = Math.ceil(H / tileSize) + 3;
+  const startTX = tcx - Math.floor(tilesH/2) - 1;
+  const startTY = tcy - Math.floor(tilesV/2) - 1;
+  const originX = W/2 - frac_x*tileSize;
+  const originY = H/2 - frac_y*tileSize;
+
+  const subdomains = ['a','b','c'];
+  let tileCount = 0;
+
+  for (let dy = -Math.floor(tilesV/2)-1; dy <= Math.ceil(tilesV/2)+1; dy++) {
+    for (let dx = -Math.floor(tilesH/2)-1; dx <= Math.ceil(tilesH/2)+1; dx++) {
+      const tx = ((tcx + dx) % n + n) % n;
+      const ty = tcy + dy;
+      if (ty < 0 || ty >= n) continue;
+      const sub = subdomains[tileCount % 3]; tileCount++;
+      const img = document.createElement('img');
+      img.className = 'map-tile';
+      img.style.left = (originX + dx * tileSize) + 'px';
+      img.style.top  = (originY + dy * tileSize) + 'px';
+      img.style.position = 'absolute';
+      img.style.width = img.style.height = tileSize + 'px';
+      img.src = 'https://'+sub+'.tile.openstreetmap.org/'+z+'/'+tx+'/'+ty+'.png';
+      img.onerror = function(){ this.style.background='#e0ead8'; this.src=''; };
+      img.setAttribute('crossorigin','anonymous');
+      layer.appendChild(img);
+    }
+  }
+  // Insert behind zoom controls
+  const vzoom = el.querySelector('.vzoom');
+  el.insertBefore(layer, vzoom);
+}
+
+function renderHeat() {
+  const el = document.getElementById('leafletMap');
+  if (!el) return;
+  el.querySelectorAll('.vheat').forEach(e=>e.remove());
+  if (!heatOn) return;
+  const W = el.offsetWidth, H = el.offsetHeight;
+  PETS.forEach(p => {
+    const pos = latLngToPixel(p.lat, p.lng, W, H);
+    const d = document.createElement('div');
+    d.className = 'vheat';
+    const size = 180;
+    d.style.cssText = 'width:'+size+'px;height:'+size+'px;'
+      +'left:'+(pos.x - size/2)+'px;top:'+(pos.y - size/2)+'px;'
+      +'background:radial-gradient(circle,rgba(232,146,58,.22) 0%,transparent 70%);'
+      +'pointer-events:none;';
+    el.insertBefore(d, el.querySelector('.vzoom'));
+  });
+}
+
+function renderShelterPins() {
+  const el = document.getElementById('leafletMap');
+  if (!el) return;
+  el.querySelectorAll('.vshelter-wrap').forEach(e=>e.remove());
+  const W = el.offsetWidth, H = el.offsetHeight;
+  SHELTERS.forEach(s => {
+    const pos = latLngToPixel(s.lat, s.lng, W, H);
+    const d = document.createElement('div');
+    d.className = 'vshelter-wrap';
+    d.style.cssText = 'position:absolute;left:'+pos.x+'px;top:'+pos.y+'px;transform:translate(-50%,-50%);pointer-events:all;z-index:6;';
+    d.innerHTML = '<div class="vshelter">🏠 '+s.name+'</div>';
+    d.onclick = () => showToast(s.name);
+    el.insertBefore(d, el.querySelector('.vzoom'));
+  });
+}
+
+function renderMapPins(list) {
+  const el = document.getElementById('leafletMap');
+  if (!el) return;
+  el.querySelectorAll('.vpin').forEach(e=>e.remove());
+  closeMapPopup();
+  if (!list) list = getFiltered();
+  const W = el.offsetWidth, H = el.offsetHeight;
+  list.forEach(p => {
+    const pos = latLngToPixel(p.lat, p.lng, W, H);
+    const isActive = activePet && activePet.id === p.id;
+    const pin = document.createElement('div');
+    pin.className = 'vpin' + (isActive ? ' on' : '');
+    pin.id = 'vpin-'+p.id;
+    pin.style.cssText = 'left:'+pos.x+'px;top:'+pos.y+'px;';
+    pin.innerHTML = '<div class="vpin-ball" style="background:'+(isActive?'var(--amber)':'var(--bark-d)')+'"><span class="vpin-em">'+p.em+'</span></div>';
+    pin.onclick = (e) => { e.stopPropagation(); selectPet(p); };
+    el.insertBefore(pin, el.querySelector('.vzoom'));
+  });
+  // Click map to close popup
+  el.onclick = () => closeMapPopup();
+}
+
+function showMapPopup(p) {
+  closeMapPopup();
+  const el = document.getElementById('leafletMap');
+  if (!el) return;
+  const W = el.offsetWidth, H = el.offsetHeight;
+  const pos = latLngToPixel(p.lat, p.lng, W, H);
+  const popup = document.createElement('div');
+  popup.className = 'vpopup';
+  popup.id = 'vpopup-'+p.id;
+  // Position above pin
+  const left = Math.min(Math.max(pos.x - 105, 8), W - 230);
+  const top  = pos.y - 170;
+  popup.style.cssText = 'left:'+left+'px;top:'+Math.max(top,8)+'px;';
+  popup.innerHTML =
+    '<button class="vpopup-close" onclick="closeMapPopup()">✕</button>'
+    +'<div style="font-weight:700;font-size:14px;margin-bottom:3px">'+p.em+' '+p.name+'</div>'
+    +'<div style="font-size:12px;color:var(--text3)">'+p.breed+' · '+p.age+' · '+p.gender+'</div>'
+    +'<div style="font-size:11.5px;color:var(--text3);margin-top:2px">📍 '+p.area+'</div>'
+    +'<div style="display:flex;gap:4px;flex-wrap:wrap;margin:7px 0">'+p.tags.map((t,i)=>'<span class="tag '+p.tc[i]+'">'+t+'</span>').join('')+'</div>'
+    +'<button onclick="selectPet(PETS.find(x=>x.id==='+p.id+'))" style="width:100%;padding:7px;background:var(--bark-d);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">ดูรายละเอียด →</button>';
+  popup.onclick = e => e.stopPropagation();
+  el.insertBefore(popup, el.querySelector('.vzoom'));
+  openPopupId = p.id;
+}
+
+function closeMapPopup() {
+  const el = document.getElementById('leafletMap');
+  if (el) el.querySelectorAll('.vpopup').forEach(e=>e.remove());
+  openPopupId = null;
+}
+
+function toggleHeat() {
+  heatOn = !heatOn;
+  renderHeat();
+  const btn = document.getElementById('heatBtn');
+  if (btn) { btn.style.background = heatOn ? 'var(--amber)' : 'var(--warm2)'; btn.style.color = heatOn ? 'var(--bark-xd)' : 'var(--text2)'; }
+  showToast(heatOn ? 'Heatmap เปิด' : 'Heatmap ปิด');
+}
+
+function mapZoom(delta) {
+  MAP_STATE.zoom = Math.min(18, Math.max(10, MAP_STATE.zoom + delta));
+  renderTiles(); renderHeat(); renderShelterPins(); renderMapPins();
+}
+
+function mapLocate() {
+  if (!navigator.geolocation) { showToast('เบราว์เซอร์ไม่รองรับ GPS'); return; }
+  navigator.geolocation.getCurrentPosition(pos => {
+    MAP_STATE.lat = pos.coords.latitude;
+    MAP_STATE.lng = pos.coords.longitude;
+    renderTiles(); renderHeat(); renderShelterPins(); renderMapPins();
+    showToast('📍 พบตำแหน่งของคุณแล้ว');
+  }, () => showToast('ไม่สามารถขอตำแหน่งได้'));
+}
+
+function panMapTo(lat, lng) {
+  MAP_STATE.lat = lat; MAP_STATE.lng = lng;
+  renderTiles(); renderHeat(); renderShelterPins(); renderMapPins();
+}
+
+// Drag to pan
+function bindMapEvents(el) {
+  let startX, startY, startLat, startLng, isDragging = false;
+
+  const getXY = e => e.touches ? {x:e.touches[0].clientX, y:e.touches[0].clientY} : {x:e.clientX, y:e.clientY};
+
+  const onStart = e => {
+    if (e.target.closest('.vzoom,.vpin,.vshelter-wrap,.vpopup')) return;
+    const {x,y} = getXY(e);
+    startX=x; startY=y; startLat=MAP_STATE.lat; startLng=MAP_STATE.lng; isDragging=true;
+    el.style.cursor='grabbing';
+  };
+  const onMove = e => {
+    if (!isDragging) return;
+    e.preventDefault();
+    const {x,y} = getXY(e);
+    const dx = x - startX, dy = y - startY;
+    const z = MAP_STATE.zoom, n = Math.pow(2,z), tpx = 256;
+    const sinL = Math.sin(startLat*Math.PI/180);
+    const cpy = (0.5 - Math.log((1+sinL)/(1-sinL))/(4*Math.PI)) * n * tpx;
+    const cpx = (startLng+180)/360 * n * tpx;
+    const newCpx = cpx - dx, newCpy = cpy - dy;
+    MAP_STATE.lng = newCpx/(n*tpx)*360 - 180;
+    const latRad = Math.PI - 2*Math.PI*newCpy/(n*tpx);
+    MAP_STATE.lat = 180/Math.PI * Math.atan(0.5*(Math.exp(latRad)-Math.exp(-latRad)));
+    MAP_STATE.lat = Math.max(-85, Math.min(85, MAP_STATE.lat));
+    MAP_STATE.lng = Math.max(-180, Math.min(180, MAP_STATE.lng));
+    startX=x; startY=y; startLat=MAP_STATE.lat; startLng=MAP_STATE.lng;
+    renderTiles(); renderHeat(); renderShelterPins(); renderMapPins();
+  };
+  const onEnd = () => { isDragging=false; el.style.cursor='grab'; };
+
+  el.addEventListener('mousedown',  onStart);
+  el.addEventListener('mousemove',  onMove, {passive:false});
+  el.addEventListener('mouseup',    onEnd);
+  el.addEventListener('mouseleave', onEnd);
+  el.addEventListener('touchstart', onStart, {passive:true});
+  el.addEventListener('touchmove',  onMove, {passive:false});
+  el.addEventListener('touchend',   onEnd);
+  // Scroll to zoom
+  el.addEventListener('wheel', e => {
+    e.preventDefault();
+    mapZoom(e.deltaY < 0 ? 1 : -1);
+  }, {passive:false});
+}
+
+function mkPinIcon(){ return null; }    // stub — kept for compatibility
+function mkShelterIcon(){ return null; } // stub
+function refreshPins(list){ renderMapPins(list); }
+
+// ═══════════════════════════
+// SIDEBAR
+// ═══════════════════════════
+function getFiltered(){
+  const q=(document.getElementById('srch')||{value:''}).value.toLowerCase();
+  return PETS.filter(p=>{
+    const mf=activePetFilter==='all'||(activePetFilter==='vax'&&p.tags.includes('ฉีดยาแล้ว'))||p.sp===activePetFilter;
+    const mq=!q||p.name.includes(q)||p.breed.toLowerCase().includes(q)||p.area.toLowerCase().includes(q);
+    return mf&&mq;
+  });
+}
+function renderSB(){
+  const list=getFiltered();
+  const el=document.getElementById('petList');if(!el)return;
+  el.innerHTML='';
+  document.getElementById('sbCount').textContent=list.length+' ตัว · กรุงเทพฯ';
+  const mc=document.getElementById('mapCnt');if(mc)mc.textContent=list.length+' ตัวหาบ้าน';
+  list.forEach(p=>{
+    const d=document.createElement('div');
+    d.className='pcard'+(activePet&&activePet.id===p.id?' on':'');
+    d.onclick=()=>selectPet(p);
+    d.innerHTML='<div class="pthumb">'+p.em+'</div>'
+      +'<div class="pinfo"><div class="pname">'+p.name+'</div>'
+      +'<div class="pmeta">'+p.breed+' · '+p.age+'</div>'
+      +'<div class="ptags">'+p.tags.map((t,i)=>'<span class="tag '+p.tc[i]+'">'+t+'</span>').join('')+'</div>'
+      +'<div class="pdist">📍 '+p.area+'</div></div>'
+      +'<div class="pscore '+(p.score>=85?'sh':'sm')+'">'+p.score+'%</div>';
+    el.appendChild(d);
+  });
+  if(MAP_STATE.inited) renderMapPins(list);
+}
+function filterPets(){renderSB();}
+function setFilter(el,k){
+  document.querySelectorAll('.fchip').forEach(c=>c.classList.remove('on'));
+  el.classList.add('on');activePetFilter=k;renderSB();
+}
+function selectPet(p){
+  activePet=p;selectedAdoptPet=p;
+  document.getElementById('dpEm').textContent=p.em;
+  document.getElementById('dpName').textContent=p.name;
+  document.getElementById('dpSub').textContent=p.breed+' · '+p.age+' · '+p.shelter;
+  document.getElementById('dpAge').textContent=p.age;
+  document.getElementById('dpGender').textContent=p.gender;
+  document.getElementById('dpBreed').textContent=p.breed;
+  document.getElementById('dpArea').textContent=p.area;
+  document.getElementById('dpScore').textContent=p.score+'%';
+  const bar=document.getElementById('dpBar');
+  bar.style.background=p.score>=85?'var(--sage)':'var(--amber)';
+  setTimeout(()=>bar.style.width=p.score+'%',50);
+  document.getElementById('dpTags').innerHTML=p.tags.map((t,i)=>'<span class="tag '+p.tc[i]+'">'+t+'</span>').join('');
+  document.getElementById('dp').classList.add('open');
+  // Pan map to selected pet and re-render pins
+  panMapTo(p.lat, p.lng);
+  renderSB();
+}
+function closeDP(){
+  document.getElementById('dp').classList.remove('open');
+  activePet=null;
+  renderMapPins(getFiltered());
+  renderSB();
+}
+function goAdoptFlow(){goPage('adoption');}
+function goChat(){goPage('chat');if(THREADS[0])openThread(THREADS[0]);}
+
+// ═══════════════════════════
+// CHAT
+// ═══════════════════════════
+function renderChat(){
+  const tl=document.getElementById('threadList');if(!tl)return;
+  tl.innerHTML='';
+  THREADS.forEach(t=>{
+    const d=document.createElement('div');
+    d.className='thread'+(activeThread&&activeThread.id===t.id?' on':'');
+    d.onclick=()=>openThread(t);
+    d.innerHTML='<div class="avatar tav">'+t.av+'</div>'
+      +'<div class="tinfo"><div class="tname">'+t.name+(t.unread?'<span class="ubadge">'+t.unread+'</span>':'')+'</div>'
+      +'<div class="tprev">'+t.prev+'</div></div>'
+      +'<div class="ttime">'+t.time+'</div>';
+    tl.appendChild(d);
+  });
+}
+function openThread(t){
+  activeThread=t;t.unread=0;
+  document.getElementById('noChatMsg').classList.add('hide');
+  const cw=document.getElementById('chatWin');cw.classList.remove('hide');cw.style.display='flex';
+  // Mobile: hide sidebar when thread opens
+  const isMobile = window.innerWidth <= 768;
+  const csb = document.querySelector('.chat-sb');
+  if(isMobile && csb) csb.classList.add('hidden');
+  const backBtn = document.getElementById('chat-back-btn');
+  if(backBtn) backBtn.style.display = isMobile ? 'flex' : 'none';
+  document.getElementById('chatAv').textContent=t.av;
+  document.getElementById('chatTitle').textContent=t.name;
+  document.getElementById('chatSub').textContent=t.sub;
+  const me=document.getElementById('msgs');me.innerHTML='';
+  t.msgs.forEach(m=>{
+    const d=document.createElement('div');d.className='msg '+(m.me?'me':'them');
+    d.innerHTML='<div class="mbubble">'+m.txt+'</div><div class="mtime">'+m.t+'</div>';
+    me.appendChild(d);
+  });
+  me.scrollTop=me.scrollHeight;
+  renderChat();
+}
+
+function mobileChatBack(){
+  const csb=document.querySelector('.chat-sb');
+  if(csb) csb.classList.remove('hidden');
+  const cw=document.getElementById('chatWin');
+  if(cw){cw.classList.add('hide');cw.style.display='';}
+  const nc=document.getElementById('noChatMsg');
+  if(nc) nc.classList.remove('hide');
+  document.getElementById('chat-back-btn').style.display='none';
+  activeThread=null;
+}
+function sendMsg(){
+  const inp=document.getElementById('msgIn');const txt=inp.value.trim();
+  if(!txt||!activeThread)return;
+  activeThread.msgs.push({me:true,txt:txt,t:'ตอนนี้'});activeThread.prev=txt;inp.value='';
+  openThread(activeThread);
+  setTimeout(()=>{
+    const r=['ขอบคุณนะคะ 😊','รับทราบค่ะ!','เดี๋ยวจะติดต่อกลับนะคะ','โอเคค่ะ 🐾'];
+    activeThread.msgs.push({me:false,txt:r[Math.floor(Math.random()*r.length)],t:'ตอนนี้'});
+    openThread(activeThread);
+  },1200);
+}
+function chatKey(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMsg();}}
+
+// ═══════════════════════════
+// SHELTER
+// ═══════════════════════════
+function renderShelter(){
+  const lg=document.getElementById('shelterListings');if(!lg)return;
+  lg.innerHTML='';
+  const sts=['sta','sta','stp','std','sta','stp'];
+  const stl=['รับเลี้ยงได้','รับเลี้ยงได้','รอพิจารณา','รับเลี้ยงแล้ว','รับเลี้ยงได้','รอพิจารณา'];
+  PETS.slice(0,6).forEach((p,i)=>{
+    const d=document.createElement('div');d.className='lc';
+    d.innerHTML='<div class="lc-img">'+p.em+'<span class="lc-st '+sts[i]+'">'+stl[i]+'</span></div>'
+      +'<div class="lc-body"><div class="lc-name">'+p.name+'</div>'
+      +'<div class="lc-meta">'+p.breed+' · '+p.age+' · '+p.area+'</div>'
+      +'<div class="lc-foot"><span class="tag '+p.tc[0]+'">'+p.tags[0]+'</span>'
+      +'<button class="btn btn-lt" style="font-size:11px;padding:4px 10px" onclick="showToast(\'แก้ไข '+p.name+'\')">แก้ไข</button></div></div>';
+    lg.appendChild(d);
+  });
+  const ar=document.getElementById('appRows');if(!ar)return;
+  ar.innerHTML='';
+  [{n:'สมชาย ใจดี',pet:'มะม่วง 🐱',score:92,date:'28 เม.ย. 2568',st:'pending'},
+   {n:'มาลี รักสัตว์',pet:'โอ๊ต 🐶',score:85,date:'25 เม.ย. 2568',st:'approved'},
+   {n:'ธนา สุขใจ',pet:'มิ้ง 🐱',score:70,date:'22 เม.ย. 2568',st:'pending'},
+   {n:'นิดา สวยงาม',pet:'ดาว 🐶',score:88,date:'20 เม.ย. 2568',st:'rejected'},
+  ].forEach(a=>{
+    const d=document.createElement('div');d.className='at-row';
+    const stMap={pending:'รอพิจารณา',approved:'อนุมัติแล้ว',rejected:'ปฏิเสธ'};
+    const sc=a.score>=85?'tg':a.score>=75?'ta':'tr';
+    d.innerHTML='<div class="apcell"><div class="avatar" style="width:30px;height:30px;font-size:14px">'+a.n[0]+'</div>'+a.n+'</div>'
+      +'<div>'+a.pet+'</div>'
+      +'<div><span class="tag '+sc+'">'+a.score+'%</span></div>'
+      +'<div style="font-size:12px;color:var(--text3)">'+a.date+'</div>'
+      +'<div style="display:flex;gap:5px;align-items:center">'
+      +(a.st==='pending'
+        ?'<button class="btn btn-sg" style="font-size:11px;padding:4px 9px" onclick="showToast(\'อนุมัติ '+a.n+'\')">อนุมัติ</button>'
+         +'<button class="btn btn-lt" style="font-size:11px;padding:4px 9px" onclick="showToast(\'ปฏิเสธแล้ว\')">ปฏิเสธ</button>'
+        :'<span style="font-size:12px">'+stMap[a.st]+'</span>')
+      +'</div>';
+    ar.appendChild(d);
+  });
+}
+
+// ═══════════════════════════
+// CHART
+// ═══════════════════════════
+function renderChart(){
+  const yt=document.getElementById('yearTabs');if(!yt)return;
+  yt.innerHTML='';
+  [2567,2568].forEach(y=>{
+    const b=document.createElement('button');
+    b.className='ybtn'+(y===chartYear?' on':'');
+    b.textContent='พ.ศ. '+y;
+    b.onclick=()=>{chartYear=y;renderChart();};
+    yt.appendChild(b);
+  });
+  const data=CHART_DATA[chartYear];
+  const maxV=Math.max(...data.a,...data.n.filter(v=>v>0),1);
+  const bc=document.getElementById('barChart');if(!bc)return;bc.innerHTML='';
+  MONTHS.forEach((m,i)=>{
+    const a=data.a[i],n=data.n[i];
+    const blank=a===0&&n===0;
+    const grp=document.createElement('div');grp.className='bgrp';
+    if(!blank){
+      const mkB=(v,col,lbl)=>{
+        const b=document.createElement('div');b.className='bbar';
+        b.style.cssText='height:'+Math.max(v/maxV*100,3)+'%;background:'+col;
+        b.innerHTML='<div class="btt">'+m+' พ.ศ.'+chartYear+'<br>'+lbl+': '+v+' ตัว</div>';
+        return b;
+      };
+      grp.appendChild(mkB(a,'var(--sage-l)','รับเลี้ยงสำเร็จ'));
+      grp.appendChild(mkB(n,'var(--amber-l)','เข้ารับดูแล'));
+    }else{
+      const ph=document.createElement('div');
+      ph.style.cssText='flex:1;height:5px;background:var(--warm2);border-radius:3px;align-self:flex-end';
+      grp.appendChild(ph);
+    }
+    const lbl=document.createElement('span');lbl.className='blbl';lbl.textContent=m;
+    grp.appendChild(lbl);bc.appendChild(grp);
+  });
+  const tA=data.a.reduce((s,v)=>s+v,0);
+  const tN=data.n.reduce((s,v)=>s+v,0);
+  const rate=tN?Math.round(tA/tN*100):0;
+  const cs=document.getElementById('chartSum');if(!cs)return;
+  cs.innerHTML='<div class="csum" style="background:var(--sage-bg)"><div class="csum-n" style="color:var(--sage)">'+tA+'</div><div class="csum-l">รับเลี้ยงสำเร็จ ปี พ.ศ.'+chartYear+'</div></div>'
+    +'<div class="csum" style="background:var(--amber-bg)"><div class="csum-n" style="color:var(--amber)">'+tN+'</div><div class="csum-l">เข้ารับดูแล ปี พ.ศ.'+chartYear+'</div></div>'
+    +'<div class="csum" style="background:var(--sky-bg)"><div class="csum-n" style="color:var(--sky)">'+rate+'%</div><div class="csum-l">อัตราความสำเร็จ</div></div>';
+}
+
+// ═══════════════════════════
+// ADOPTION
+// ═══════════════════════════
+function renderAdoptGrid(){
+  const g=document.getElementById('adoptGrid');if(!g)return;g.innerHTML='';
+  PETS.forEach(p=>{
+    const d=document.createElement('div');
+    d.className='opt-card'+(selectedAdoptPet&&selectedAdoptPet.id===p.id?' on':'');
+    d.onclick=()=>{selectedAdoptPet=p;renderAdoptGrid();updateConfirm();};
+    d.innerHTML='<div style="font-size:30px;text-align:center;margin-bottom:4px">'+p.em+'</div>'
+      +'<div style="font-size:12px;font-weight:600;text-align:center">'+p.name+'</div>'
+      +'<div style="font-size:10.5px;color:var(--text3);text-align:center;margin-top:1px">'+p.breed+'</div>'
+      +'<div style="font-size:10px;color:var(--text4);text-align:center;margin-top:2px">📍 '+p.area+'</div>';
+    g.appendChild(d);
+  });
+}
+function updateConfirm(){
+  if(!selectedAdoptPet)return;
+  const b=document.getElementById('confirmBanner');if(!b)return;
+  const p=selectedAdoptPet;
+  b.innerHTML='<span style="font-size:50px">'+p.em+'</span>'
+    +'<div><div style="font-size:16px;font-weight:700">'+p.name+'</div>'
+    +'<div style="font-size:12px;color:var(--text3)">'+p.breed+' · '+p.age+' · '+p.gender+'</div>'
+    +'<div style="font-size:11px;color:var(--text4);margin-top:3px">📍 '+p.area+'</div></div>';
+}
+function renderAdoptStep(){
+  document.querySelectorAll('.astep').forEach((el,i)=>el.classList.toggle('on',i===adoptStep));
+  [0,1,2,3].forEach(i=>{
+    const sc=document.getElementById('sc'+i);
+    if(i<adoptStep){sc.className='sc done';sc.textContent='✓';}
+    else if(i===adoptStep){sc.className='sc active';sc.textContent=i+1;}
+    else{sc.className='sc';sc.textContent=i+1;}
+    if(i<3){const ln=document.getElementById('ln'+i);if(ln)ln.className='sline'+(i<adoptStep?' done':'');}
+    const sl=document.getElementById('sl'+i);
+    if(sl)sl.className='slbl'+(i===adoptStep?' active':'');
+  });
+  updateConfirm();
+}
+function adoptNext(){if(adoptStep<4){adoptStep++;renderAdoptStep();}}
+function adoptBack(){if(adoptStep>0){adoptStep--;renderAdoptStep();}}
+function submitAdopt(){adoptStep=4;renderAdoptStep();showToast('ส่งคำขอสำเร็จ');}
+function selOpt(el){el.parentElement.querySelectorAll('.opt-card').forEach(c=>c.classList.remove('on'));el.classList.add('on');}
+function adoptDistChange(){}
+
+// ═══════════════════════════
+// QUIZ
+// ═══════════════════════════
+function renderQuiz(){
+  const body=document.getElementById('quizBody');
+  document.getElementById('quizResults').classList.add('hide');
+  if(!body)return;
+  document.getElementById('quizBar').style.width=((quizStep+1)/QUIZ_QS.length*100)+'%';
+  const q=QUIZ_QS[quizStep];
+  body.innerHTML='<div class="qcard"><div style="font-size:15px;font-weight:600;margin-bottom:14px">'+(quizStep+1)+'. '+q.q+'</div>'
+    +'<div style="display:flex;flex-direction:column;gap:8px">'
+    +q.opts.map((o,i)=>'<div class="qopt'+(quizAnswers[quizStep]===i?' on':'')+'" id="qo'+i+'" onclick="pickQ('+i+')">'
+      +'<span style="font-size:20px;flex-shrink:0">'+o.i+'</span><span>'+o.l+'</span></div>').join('')
+    +'</div></div>'
+    +'<div style="display:flex;justify-content:space-between;margin-top:10px">'
+    +(quizStep>0?'<button class="btn btn-lt" onclick="quizBack()">← ก่อนหน้า</button>':'<div></div>')
+    +'<button class="btn btn-dk" onclick="quizNext()">'+(quizStep===QUIZ_QS.length-1?'ดูผลลัพธ์':'ถัดไป →')+'</button></div>';
+}
+function pickQ(i){quizAnswers[quizStep]=i;document.querySelectorAll('.qopt').forEach((e,j)=>e.classList.toggle('on',j===i));}
+function quizNext(){
+  if(quizAnswers[quizStep]===undefined){showToast('กรุณาเลือกคำตอบก่อน');return;}
+  if(quizStep<QUIZ_QS.length-1){quizStep++;renderQuiz();}else showQuizResults();
+}
+function quizBack(){if(quizStep>0){quizStep--;renderQuiz();}}
+function showQuizResults(){
+  document.getElementById('quizBody').innerHTML='';
+  document.getElementById('quizBar').style.width='100%';
+  document.getElementById('quizResults').classList.remove('hide');
+  const ml=document.getElementById('matchList');ml.innerHTML='';
+  const apt=quizAnswers[0]===0,active=quizAnswers[2]===2;
+  const scored=PETS.map(p=>{
+    let s=p.score;
+    if(apt&&p.tags.includes('อพาร์ทเมนต์ได้'))s+=8;
+    if(active&&p.sp==='dog')s+=5;
+    if(!active&&p.sp==='cat')s+=5;
+    return Object.assign({},p,{fs:Math.min(99,s)});
+  }).sort((a,b)=>b.fs-a.fs).slice(0,4);
+  scored.forEach(p=>{
+    const d=document.createElement('div');d.className='match-card';
+    d.onclick=()=>{goPage('map');setTimeout(()=>selectPet(PETS.find(x=>x.id===p.id)),300);};
+    d.innerHTML='<span style="font-size:40px">'+p.em+'</span>'
+      +'<div style="flex:1"><div style="font-size:15px;font-weight:700">'+p.name+'</div>'
+      +'<div style="font-size:12px;color:var(--text3)">'+p.breed+' · '+p.age+'</div>'
+      +'<div style="font-size:11px;color:var(--text4);margin-top:2px">📍 '+p.area+'</div>'
+      +'<div style="display:flex;gap:4px;margin-top:5px">'+p.tags.slice(0,2).map((t,i)=>'<span class="tag '+p.tc[i]+'">'+t+'</span>').join('')+'</div></div>'
+      +'<div style="font-family:Fraunces,serif;font-size:24px;font-weight:700;color:var(--sage)">'+p.fs+'%</div>';
+    ml.appendChild(d);
+  });
+}
+function resetQuiz(){quizStep=0;quizAnswers=[];renderQuiz();}
+
+// ═══════════════════════════
+// PROFILE NOTIFS
+// ═══════════════════════════
+function renderNotifs(){
+  const el=document.getElementById('notifList');if(!el)return;el.innerHTML='';
+  notifState.forEach((lbl,i)=>{
+    const d=document.createElement('div');
+    d.style.cssText='display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border2)';
+    const tog=document.createElement('div');tog.className='tog';
+    tog.style.background=notifOn[i]?'var(--sage)':'var(--warm2)';
+    const ball=document.createElement('div');ball.className='togball';
+    ball.style.left=notifOn[i]?'20px':'2px';
+    tog.appendChild(ball);
+    tog.onclick=()=>{
+      notifOn[i]=!notifOn[i];
+      tog.style.background=notifOn[i]?'var(--sage)':'var(--warm2)';
+      ball.style.left=notifOn[i]?'20px':'2px';
+    };
+    d.innerHTML='<span style="font-size:13px">'+lbl+'</span>';
+    d.appendChild(tog);
+    el.appendChild(d);
+  });
+}
+
+// ═══════════════════════════
+// LOCATION HELPERS (shared)
+// ═══════════════════════════
+// ═══════════════════════════
+// TOAST
+// ═══════════════════════════
+let toastT;
+function showToast(msg){
+  const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');
+  clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),2800);
+}
+
+// ═══════════════════════════
+// HEALTH FORM HELPERS
+// ═══════════════════════════
+const healthState={spay:null,vax:null};
+let vaxCount=1;
+
+function toggleHealth(field,val){
+  healthState[field]=val;
+  ['yes','no','uk'].forEach(v=>{
+    const lbl=document.getElementById('lbl-'+field+'-'+v);
+    const ic=document.getElementById('ic-'+field+'-'+v);
+    if(!lbl||!ic)return;
+    const on=v===val;
+    lbl.style.borderColor=on?'var(--sage)':'var(--border)';
+    lbl.style.background=on?'var(--sage-bg)':'var(--card)';
+    lbl.style.color=on?'#2A6A40':'var(--text2)';
+    ic.style.background=on?'var(--sage)':'';
+    ic.style.borderColor=on?'var(--sage)':'var(--border)';
+    ic.innerHTML=on?'<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>':'';
+  });
+  if(field==='vax'){const d=document.getElementById('vax-detail');if(d)d.classList.toggle('hide',val!=='yes');}
+}
+function toggleVaxChip(el){el.classList.toggle('on');}
+function toggleHealthChip(el){
+  const chips=document.querySelectorAll('#health-chips .hchip');
+  if(el.dataset.h==='ไม่ทราบ'){chips.forEach(c=>{if(c!==el)c.classList.remove('on');});}
+  else{chips.forEach(c=>{if(c.dataset.h==='ไม่ทราบ')c.classList.remove('on');});}
+  el.classList.toggle('on');
+}
+function changeVaxCount(d){
+  vaxCount=Math.max(1,Math.min(10,vaxCount+d));
+  const el=document.getElementById('vax-count-val');if(el)el.textContent=vaxCount;
+}
+function countWords(ta){
+  const words=ta.value.trim()===''?[]:ta.value.trim().split(/\s+/);
+  const count=words.length;
+  const ce=document.getElementById('desc-count');
+  const we=document.getElementById('desc-warn');
+  if(ce){ce.textContent=count+'/50 คำ';ce.style.color=count>50?'var(--rose)':count>40?'var(--amber)':'var(--text3)';}
+  if(we)we.classList.toggle('hide',count<=50);
+}
+function resetHealthForm(){
+  ['spay','vax'].forEach(f=>{
+    healthState[f]=null;
+    ['yes','no','uk'].forEach(v=>{
+      const lbl=document.getElementById('lbl-'+f+'-'+v);
+      const ic=document.getElementById('ic-'+f+'-'+v);
+      if(lbl){lbl.style.borderColor='var(--border)';lbl.style.background='var(--card)';lbl.style.color='var(--text2)';}
+      if(ic){ic.style.background='';ic.style.borderColor='var(--border)';ic.innerHTML='';}
+    });
+  });
+  const det=document.getElementById('vax-detail');if(det)det.classList.add('hide');
+  document.querySelectorAll('.vchip.on,.hchip.on').forEach(c=>c.classList.remove('on'));
+  vaxCount=1;
+  const vc=document.getElementById('vax-count-val');if(vc)vc.textContent='1';
+  const ta=document.getElementById('pmDesc');if(ta)ta.value='';
+  const dc=document.getElementById('desc-count');if(dc){dc.textContent='0/50 คำ';dc.style.color='var(--text3)';}
+  const dw=document.getElementById('desc-warn');if(dw)dw.classList.add('hide');
+}
+
+// ═══════════════════════════
+// ROUTING
+// ═══════════════════════════
+function updateNavForRole(){
+  const isOrg=currentRole==='org';
+  const show=(id,vis)=>{const el=document.getElementById(id);if(el)el.style.display=vis?'':'none';};
+  show('nav-myposts',!isOrg);show('nav-saved',!isOrg);show('nav-quiz',!isOrg);
+  show('nav-shelter',isOrg);show('nav-adoption',isOrg);show('nav-stats',isOrg);
+  show('bnav-myposts',!isOrg);show('bnav-saved',!isOrg);show('bnav-quiz',!isOrg);
+  show('bnav-shelter',isOrg);show('bnav-adoption',isOrg);show('bnav-stats',isOrg);
+}
+
+function goPage(p){
+  document.querySelectorAll('.page').forEach(e=>e.classList.remove('on'));
+  const pg=document.getElementById('page-'+p);
+  if(pg)pg.classList.add('on');
+  document.querySelectorAll('.npill').forEach(e=>e.classList.toggle('on',e.dataset.p===p));
+  document.querySelectorAll('.bnav-item').forEach(e=>e.classList.toggle('on',e.id==='bnav-'+p));
+  const nav=document.getElementById('topnav');
+  if(nav)nav.style.display=p==='login'?'none':'flex';
+  if(p==='login')document.getElementById('bottom-nav').style.display='none';
+  else document.getElementById('bottom-nav').style.removeProperty('display');
+  if(p==='map'){initMap();renderSB();}
+  if(p==='chat'){renderChat();const csb=document.querySelector('.chat-sb');if(csb)csb.classList.remove('hidden');const cw=document.getElementById('chatWin');if(cw){cw.classList.add('hide');cw.style.display='';}const nc=document.getElementById('noChatMsg');if(nc)nc.classList.remove('hide');}
+  if(p==='shelter'){renderShelter();renderChart();}
+  if(p==='quiz'){quizStep=0;quizAnswers=[];renderQuiz();}
+  if(p==='adoption'){adoptStep=0;renderAdoptStep();renderAdoptGrid();}
+  if(p==='profile')renderNotifs();
+}
+
+// ═══════════════════════════
+// CHAT HELPERS
+// ═══════════════════════════
+// ═══════════════════════════
+// P2P REQUEST DETAIL
+// ═══════════════════════════
+function openReqDetail(name,score,area,home,exp){
+  const s=parseInt(score),risk=s>=85?'ต่ำ':s>=70?'กลาง':'สูง',rtag=s>=85?'tg':s>=70?'ta':'tr';
+  document.getElementById('reqModalContent').innerHTML=
+    '<div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">'
+    +'<div class="avatar" style="width:44px;height:44px;font-size:18px;font-weight:600">'+name.charAt(0)+'</div>'
+    +'<div><div style="font-size:15px;font-weight:600">'+name+'</div><div style="font-size:12px;color:var(--text3)">'+area+'</div></div>'
+    +'<span class="tag '+rtag+'" style="margin-left:auto">Risk: '+risk+'</span></div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">'
+    +'<div style="background:var(--warm);border-radius:var(--rsm);padding:9px 11px"><div style="font-size:10px;color:var(--text4);text-transform:uppercase;letter-spacing:.5px">Compatibility</div><div style="font-size:16px;font-weight:700;margin-top:2px;color:var(--sage)">'+score+'%</div></div>'
+    +'<div style="background:var(--warm);border-radius:var(--rsm);padding:9px 11px"><div style="font-size:10px;color:var(--text4);text-transform:uppercase;letter-spacing:.5px">ที่พัก</div><div style="font-size:13px;font-weight:600;margin-top:2px">'+home+'</div></div>'
+    +'<div style="background:var(--warm);border-radius:var(--rsm);padding:9px 11px"><div style="font-size:10px;color:var(--text4);text-transform:uppercase;letter-spacing:.5px">ประสบการณ์</div><div style="font-size:13px;font-weight:600;margin-top:2px">'+exp+'</div></div>'
+    +'<div style="background:var(--warm);border-radius:var(--rsm);padding:9px 11px"><div style="font-size:10px;color:var(--text4);text-transform:uppercase;letter-spacing:.5px">การยืนยัน</div><div style="font-size:13px;font-weight:600;margin-top:2px;color:var(--sage)">OTP + บัตร</div></div>'
+    +'</div>'
+    +'<div style="font-size:12px;color:var(--text2);line-height:1.7;background:var(--warm);border-radius:var(--r);padding:10px 12px">เหตุผล: อยากมีเพื่อนในบ้าน พร้อมดูแลอย่างเต็มที่</div>';
+  document.getElementById('reqModal').classList.add('open');
+}
+function closeReqModal(){document.getElementById('reqModal').classList.remove('open');}
+
+// ═══════════════════════════
+// INIT
+// ═══════════════════════════
+updateNavForRole();
+goPage('login');
+</script>
+
+</body>
+</html>
